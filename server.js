@@ -7,9 +7,8 @@ const passwordResetRoutes = require('./routes/passwordResetRoutes');
 app.use(cors());
 app.use(express.json());
 
-// 라우트 설정
-app.use('/auth', authRoutes);
-app.use('/auth', passwordResetRoutes); // /auth/reset-password 경로로 접근 가능
+app.use('/auth', authRoutes); // 🔥 실제 경로: /auth/check-password
+app.use('/auth/reset-password', passwordResetRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
