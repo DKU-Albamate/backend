@@ -10,8 +10,9 @@ exports.createAppointment = async (req, res) => {
 
   const { data, error } = await supabase
     .from('appointments')
-    .insert([{ user_uid, title, start_time, end_time, color }]);
-
+    .insert([{ user_uid, title, start_time, end_time, color }])
+    .select();
+    
   if (error) return res.status(400).json({ error: error.message });
   res.status(201).json(data);
 };
