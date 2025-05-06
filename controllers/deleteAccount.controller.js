@@ -37,7 +37,11 @@ exports.deleteAccountController = async (req, res) => {
 
     return res.status(200).json({ message: '탈퇴 및 데이터 삭제 완료' });
   } catch (error) {
-    console.error('❌ 탈퇴 실패:', error.message);
-    return res.status(500).json({ message: '탈퇴 중 오류 발생', error: error.message });
+    // 🔥 이 부분 추가해서 오류 상세 확인
+    console.error('❌ 탈퇴 실패:', error.response?.data || error.message);
+    return res.status(500).json({
+      message: '탈퇴 중 오류 발생',
+      error: error.response?.data || error.message,
+    });
   }
 };
