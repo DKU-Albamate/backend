@@ -6,7 +6,7 @@ const app = express();
 const authRoutes = require('./routes/authRoutes');
 const passwordResetRoutes = require('./routes/passwordResetRoutes');
 const appointmentsRouter = require('./routes/appointments'); 
-const deleteAccountRouter = require('./routes/delete-account.route');
+const deleteAccountRouter = require('./routes/delete-account');
 
 app.use(cors());
 app.use(express.json());
