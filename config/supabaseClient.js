@@ -38,10 +38,10 @@ const createGroup = async ({ name, description, useAutoAssignment, userId }) => 
     `https://firebasedynamiclinks.googleapis.com/v1/shortLinks?key=${process.env.FIREBASE_WEB_API_KEY}`,
     {
       dynamicLinkInfo: {
-        domainUriPrefix: 'https://yourapp.page.link',
-        link: `https://yourapp.com/invite?code=${inviteCode}`,
-        androidInfo: { androidPackageName: 'com.yourcompany.albamate' },
-        iosInfo: { iosBundleId: 'com.yourcompany.albamate.ios' }
+        domainUriPrefix: 'https://yourapp.page.link', // Firebase Dynamic Link 도메인 접두사  
+        link: `https://yourapp.com/invite?code=${inviteCode}`, // 초대 링크
+        androidInfo: { androidPackageName: 'com.yourcompany.albamate' }, // 안드로이드 패키지 이름
+        iosInfo: { iosBundleId: 'com.yourcompany.albamate.ios' } // iOS 번들 ID(삭제예정)
       }
     }
   );
