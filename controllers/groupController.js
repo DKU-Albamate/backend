@@ -1,48 +1,76 @@
-// controllers/groupController.js
-const { createGroup, joinGroupByInviteCode } = require('../services/groupService');
+const groupService = require('../services/groupService');
 
-const createGroupController = async (req, res) => {
+const createGroup = async (req, res) => {
   try {
     const { name, description, useAutoAssignment } = req.body;
-    const userId = req.user.uid; // 인증 미들웨어를 통해 전달된 Firebase UID
-
-    const result = await createGroup({ name, description, useAutoAssignment, userId });
-
-    res.status(201).json({
-      success: true,
-      data: result
-    });
+    const userId = req.user.uid;
+    const result = await groupService.createGroup({ name, description, useAutoAssignment, userId });
+    res.status(201).json({ success: true, data: result });
   } catch (error) {
-    console.error('그룹 생성 오류:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-const joinGroupController = async (req, res) => {
+const regenerateInviteCode = async (req, res) => {
   try {
-    const { inviteCode } = req.body;
+    const { groupId } = req.params;
     const userId = req.user.uid;
-
-    const result = await joinGroupByInviteCode({ userId, inviteCode });
-
-    res.status(200).json({
-      success: true,
-      message: '그룹에 성공적으로 참여했습니다.',
-      data: result
-    });
+    const result = await groupService.regenerateInviteCode(groupId, userId);
+    res.status(200).json({ success: true, data: result });
   } catch (error) {
-    console.error('그룹 참여 오류:', error);
-    res.status(400).json({
-      success: false,
-      error: error.message
-    });
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+const getGroups = async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const result = await groupService.getGroups(userId);
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const updateGroup = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const { name, description, useAutoAssignment } = req.body;
+    const userId = req.user.uid;
+    await groupService.updateGroup(groupId, { name, description, useAutoAssignment }, userId);
+    res.status(200).json({ success: true, message: '그룹이 수정되었습니다.' });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+const deleteGroup = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const userId = req.user.uid;
+    await groupService.deleteGroup(groupId, userId);
+    res.status(200).json({ success: true, message: '그룹이 삭제되었습니다.' });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+// ✅ 초대코드로 그룹 자동 가입
+const joinGroupByInviteCode = async (req, res) => {
+  try {
+    const { inviteCode, userUid } = req.body;
+    const result = await groupService.joinGroupByInviteCode(inviteCode, userUid);
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
   }
 };
 
 module.exports = {
-  createGroupController,
-  joinGroupController
+  createGroup,
+  regenerateInviteCode,
+  getGroups,
+  updateGroup,
+  deleteGroup,
+  joinGroupByInviteCode, // ✅ 라우터 등록도 꼭!
 };
