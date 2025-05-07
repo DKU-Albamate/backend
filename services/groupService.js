@@ -73,7 +73,19 @@ const joinGroupByInviteCode = async (inviteCode, userUid) => {
   };
 };
 
+// ✅ 사장님이 생성한 그룹 목록 조회
+const getGroups = async (userId) => {
+  const { data, error } = await supabase
+    .from('groups')
+    .select('*')
+    .eq('created_by', userId); // 생성자 기준 필터링
+
+  if (error) throw new Error(error.message);
+  return data;
+};
+
 module.exports = {
   createGroup,
   joinGroupByInviteCode,
+  getGroups,
 };
