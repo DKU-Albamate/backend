@@ -3,6 +3,8 @@ const router = express.Router();
 const groupController = require('../controllers/groupController');
 const authMiddleware = require('../middlewares/auth');
 
+router.get('/:groupId/invite-code', authMiddleware, groupController.getInviteCode);
+
 // ✅ [1] 그룹 생성 - 가장 먼저 배치 (라우팅 충돌 방지)
 router.post('/', authMiddleware, groupController.createGroup);
 

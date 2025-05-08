@@ -1,4 +1,5 @@
 const groupService = require('../services/groupService');
+const { supabase } = require('../config/supabaseClient');
 
 const createGroup = async (req, res) => {
   try {
@@ -44,6 +45,32 @@ const updateGroup = async (req, res) => {
   }
 };
 
+const getInviteCode = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+
+    const { data, error } = await supabase
+      .from('groups')
+      .select('invite_code, invite_code_expires_at')
+      .eq('id', groupId)
+      .single();
+
+    if (error || !data) {
+      return res.status(404).json({ success: false, message: '그룹을 찾을 수 없습니다.' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        inviteCode: data.invite_code,
+        inviteCodeExpiresAt: data.invite_code_expires_at,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 const deleteGroup = async (req, res) => {
   try {
     const { groupId } = req.params;
@@ -72,5 +99,6 @@ module.exports = {
   getGroups,
   updateGroup,
   deleteGroup,
+  getInviteCode, 
   joinGroupByInviteCode, // ✅ 라우터 등록도 꼭!
 };
