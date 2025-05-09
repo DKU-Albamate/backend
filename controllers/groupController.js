@@ -84,11 +84,20 @@ const deleteGroup = async (req, res) => {
 // 🔹 초대 코드로 그룹 가입
 const joinGroupByInviteCode = async (req, res) => {
   try {
-    const { inviteCode, userUid } = req.body;
+    const { inviteCode } = req.body;
+    const userUid = req.user.uid; // Firebase UID
+
     const result = await groupService.joinGroupByInviteCode(inviteCode, userUid);
-    res.status(200).json({ success: true, data: result });
+    res.status(200).json({ 
+      success: true, 
+      data: result,
+      message: '그룹 참여가 완료되었습니다.' 
+    });
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    res.status(400).json({ 
+      success: false, 
+      message: error.message 
+    });
   }
 };
 

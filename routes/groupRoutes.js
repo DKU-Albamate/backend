@@ -21,7 +21,7 @@ router.put('/:groupId', authMiddleware, groupController.updateGroup);
 // ✅ 그룹 삭제
 router.delete('/:groupId', authMiddleware, groupController.deleteGroup);
 
-// ✅ 초대 코드로 그룹 가입
+// ✅ 초대 코드로 그룹 가입 (알바생용)
 router.post('/join', authMiddleware, groupController.joinGroupByInviteCode);
 
 module.exports = router;
