@@ -117,16 +117,20 @@ const regenerateInviteCode = async (groupId, userId) => {
 
 // 🔹 그룹 목록 조회
 const getGroups = async (userId) => {
+  // 1. 먼저 사용자가 속한 그룹 ID들을 조회
+  const { data: memberData, error: memberError } = await supabase
+    .from('group_members')
+    .select('group_id')
+    .eq('user_uid', userId);
+
+  if (memberError) throw new Error(memberError.message);
+
+  // 2. 조회된 그룹 ID들로 그룹 정보 조회
+  const groupIds = memberData.map(member => member.group_id);
   const { data, error } = await supabase
     .from('groups')
     .select('id, name, description')
-    .in(
-      'id',
-      supabase
-        .from('group_members')
-        .select('group_id')
-        .eq('user_uid', userId)
-    );
+    .in('id', groupIds);
 
   if (error) throw new Error(error.message);
   return data;
