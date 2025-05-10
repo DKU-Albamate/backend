@@ -150,3 +150,14 @@ exports.getCheckmark = async (req, res) => {
   if (error) return res.status(400).json({ success: false, message: error.message });
   res.status(200).json({ success: true, isChecked: data?.is_checked ?? false });
 };
+
+module.exports = {
+  createPost,
+  getPostsByGroup,
+  updatePost,
+  deletePost,
+  addComment,
+  getComments,
+  updateCheckmark,
+  getCheckmark,
+};
