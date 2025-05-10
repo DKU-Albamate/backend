@@ -3,7 +3,7 @@ const { supabase } = require('../config/supabaseClient');
 const ALLOWED_CATEGORIES = ['안내사항', '신메뉴공지', '대타구하기'];
 
 // 🔹 글 작성
-exports.createPost = async (req, res) => {
+const createPost = async (req, res) => {
   const { groupId, title, content, category } = req.body;
   const userUid = req.user.uid;
 
@@ -24,7 +24,7 @@ exports.createPost = async (req, res) => {
 };
 
 // 🔹 글 목록 조회 (groupId + optional category)
-exports.getPostsByGroup = async (req, res) => {
+const getPostsByGroup = async (req, res) => {
   const { groupId, category } = req.query;
 
   let query = supabase.from('board_posts').select('*').eq('group_id', groupId);
@@ -37,7 +37,7 @@ exports.getPostsByGroup = async (req, res) => {
 };
 
 // 🔹 글 수정
-exports.updatePost = async (req, res) => {
+const updatePost = async (req, res) => {
   const { postId } = req.params;
   const { title, content } = req.body;
   const userUid = req.user.uid;
@@ -69,7 +69,7 @@ exports.updatePost = async (req, res) => {
 };
 
 // 🔹 글 삭제
-exports.deletePost = async (req, res) => {
+const deletePost = async (req, res) => {
   const { postId } = req.params;
   const userUid = req.user.uid;
 
@@ -93,7 +93,7 @@ exports.deletePost = async (req, res) => {
 };
 
 // 🔹 댓글 추가
-exports.addComment = async (req, res) => {
+const addComment = async (req, res) => {
   const { postId, content } = req.body;
   const userUid = req.user.uid;
 
@@ -108,7 +108,7 @@ exports.addComment = async (req, res) => {
 };
 
 // 🔹 댓글 목록 조회
-exports.getComments = async (req, res) => {
+const getComments = async (req, res) => {
   const { postId } = req.params;
 
   const { data, error } = await supabase.from('post_comments')
@@ -121,7 +121,7 @@ exports.getComments = async (req, res) => {
 };
 
 // 🔹 체크박스 상태 저장 또는 갱신
-exports.updateCheckmark = async (req, res) => {
+const updateCheckmark = async (req, res) => {
   const { postId, isChecked } = req.body;
   const userUid = req.user.uid;
 
@@ -137,7 +137,7 @@ exports.updateCheckmark = async (req, res) => {
 };
 
 // 🔹 체크박스 상태 불러오기
-exports.getCheckmark = async (req, res) => {
+const getCheckmark = async (req, res) => {
   const { postId } = req.params;
   const userUid = req.user.uid;
 
