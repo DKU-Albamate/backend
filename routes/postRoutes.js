@@ -28,4 +28,5 @@ router.post('/:postId/checkmark', authenticate, postController.updateCheckmark);
 // 체크박스 상태 조회
 router.get('/:postId/checkmark', authenticate, postController.getCheckmark);
 
+router.delete('/comments/:commentId', authenticate, postController.deleteComment);
 module.exports = router;

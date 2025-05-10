@@ -110,6 +110,39 @@ const addComment = async (req, res) => {
   res.status(201).json({ success: true, data });
 };
 
+// 댓글 수정정
+const deleteComment = async (req, res) => {
+  const { commentId } = req.params;
+  const userUid = req.user.uid;
+
+  const { data: comment, error: fetchError } = await supabase
+    .from('post_comments')
+    .select('*')
+    .eq('id', commentId)
+    .single();
+
+  if (fetchError || !comment) {
+    return res.status(404).json({ success: false, message: '댓글을 찾을 수 없습니다.' });
+  }
+
+  // 권한 확인
+  if (comment.user_uid !== userUid) {
+    return res.status(403).json({ success: false, message: '댓글 삭제 권한이 없습니다.' });
+  }
+
+  // 삭제 수행
+  const { error: deleteError } = await supabase
+    .from('post_comments')
+    .delete()
+    .eq('id', commentId);
+
+  if (deleteError) {
+    return res.status(400).json({ success: false, message: deleteError.message });
+  }
+
+  res.status(200).json({ success: true, message: '댓글이 삭제되었습니다.' });
+};
+
 // 🔹 댓글 목록 조회
 const getComments = async (req, res) => {
   const { postId } = req.params;
@@ -161,6 +194,7 @@ module.exports = {
   updatePost,
   deletePost,
   addComment,
+  deleteComment,
   getComments,
   updateCheckmark,
   getCheckmark,
