@@ -1,18 +1,31 @@
+// routes/postRoutes.js
 const express = require('express');
 const router = express.Router();
-const authenticate = require('../middlewares/auth');
+const { authenticate } = require('../middlewares/auth');
 const postController = require('../controllers/postController');
 
-// 글 작성
+// 게시글 작성
 router.post('/', authenticate, postController.createPost);
 
-// 글 목록 조회 (query: groupId, category)
+// 게시글 목록 조회
 router.get('/', authenticate, postController.getPostsByGroup);
 
-// 글 수정
+// 게시글 수정
 router.put('/:postId', authenticate, postController.updatePost);
 
-// 글 삭제
+// 게시글 삭제
 router.delete('/:postId', authenticate, postController.deletePost);
+
+// 댓글 작성
+router.post('/:postId/comments', authenticate, postController.addComment);
+
+// 댓글 조회
+router.get('/:postId/comments', authenticate, postController.getComments);
+
+// 체크박스 상태 저장/업데이트
+router.post('/:postId/checkmark', authenticate, postController.updateCheckmark);
+
+// 체크박스 상태 조회
+router.get('/:postId/checkmark', authenticate, postController.getCheckmark);
 
 module.exports = router;
