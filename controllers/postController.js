@@ -23,7 +23,7 @@ const createPost = async (req, res) => {
   res.status(201).json({ success: true, data });
 };
 
-// 🔹 글 목록 조회 (groupId + optional category)
+// 🔹 글 목록 조회
 const getPostsByGroup = async (req, res) => {
   const { groupId, category } = req.query;
 
@@ -52,7 +52,7 @@ const updatePost = async (req, res) => {
     .select('group_role').eq('group_id', post.group_id).eq('user_uid', userUid).single();
 
   const isAuthor = post.author_uid === userUid;
-  const isBoss = roleData?.group_role === 'BOSS';
+  const isBoss = roleData?.group_role?.toLowerCase() === 'boss';
 
   if (!isAuthor && !isBoss) {
     return res.status(403).json({ success: false, message: '수정 권한이 없습니다.' });
@@ -75,19 +75,22 @@ const deletePost = async (req, res) => {
 
   const { data: post, error: fetchError } = await supabase.from('board_posts')
     .select('*').eq('id', postId).single();
-  if (fetchError || !post) return res.status(404).json({ success: false, message: '게시글을 찾을 수 없습니다.' });
+
+  if (fetchError || !post)
+    return res.status(404).json({ success: false, message: '게시글을 찾을 수 없습니다.' });
 
   const { data: roleData } = await supabase.from('group_members')
     .select('group_role').eq('group_id', post.group_id).eq('user_uid', userUid).single();
 
   const isAuthor = post.author_uid === userUid;
-  const isBoss = roleData?.group_role === 'BOSS';
+  const isBoss = roleData?.group_role?.toLowerCase() === 'boss';
+
   if (!isAuthor && !isBoss) {
     return res.status(403).json({ success: false, message: '삭제 권한이 없습니다.' });
   }
 
-  const { error } = await supabase.from('board_posts')
-    .delete().eq('id', postId);
+  const { error } = await supabase.from('board_posts').delete().eq('id', postId);
+
   if (error) return res.status(400).json({ success: false, message: error.message });
   res.status(200).json({ success: true, message: '삭제되었습니다.' });
 };
@@ -136,7 +139,7 @@ const updateCheckmark = async (req, res) => {
   res.status(200).json({ success: true, data });
 };
 
-// 🔹 체크박스 상태 불러오기
+// 🔹 체크박스 상태 조회
 const getCheckmark = async (req, res) => {
   const { postId } = req.params;
   const userUid = req.user.uid;
@@ -151,6 +154,7 @@ const getCheckmark = async (req, res) => {
   res.status(200).json({ success: true, isChecked: data?.is_checked ?? false });
 };
 
+// 🔹 export
 module.exports = {
   createPost,
   getPostsByGroup,
