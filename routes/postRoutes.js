@@ -1,7 +1,7 @@
 // routes/postRoutes.js
 const express = require('express');
 const router = express.Router();
-const { authenticate } = require('../middlewares/auth');
+const authenticate = require('../middlewares/auth');
 const postController = require('../controllers/postController');
 
 // 게시글 작성
