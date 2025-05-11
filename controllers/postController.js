@@ -110,7 +110,7 @@ const addComment = async (req, res) => {
   res.status(201).json({ success: true, data });
 };
 
-// 댓글 수정정
+// 댓글 삭제 
 const deleteComment = async (req, res) => {
   const { commentId } = req.params;
   const userUid = req.user.uid;
