@@ -112,7 +112,7 @@ const addComment = async (req, res) => {
 
 // 댓글 삭제 
 const deleteComment = async (req, res) => {
-  const { commentId } = req.params;
+  const { commentId, postId } = req.params; // ✅ postId도 받음 (비록 안 쓰더라도)
   const userUid = req.user.uid;
 
   const { data: comment, error: fetchError } = await supabase
@@ -125,12 +125,10 @@ const deleteComment = async (req, res) => {
     return res.status(404).json({ success: false, message: '댓글을 찾을 수 없습니다.' });
   }
 
-  // 권한 확인
   if (comment.user_uid !== userUid) {
     return res.status(403).json({ success: false, message: '댓글 삭제 권한이 없습니다.' });
   }
 
-  // 삭제 수행
   const { error: deleteError } = await supabase
     .from('post_comments')
     .delete()
