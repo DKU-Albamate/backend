@@ -29,6 +29,6 @@ router.post('/:postId/checkmark', authenticate, postController.updateCheckmark);
 router.get('/:postId/checkmark', authenticate, postController.getCheckmark);
 
 // 댓글 삭제
-router.delete('/posts/:postId/comments/:commentId', authenticate, postController.deleteComment);
+router.delete('/:postId/comments/:commentId', authenticate, postController.deleteComment);
 
 module.exports = router;
