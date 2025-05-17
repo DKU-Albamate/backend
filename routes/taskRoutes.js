@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const taskController = require('../controllers/taskController');
-const { authenticateToken } = require('../middlewares/auth');
+const authenticateToken = require('../middlewares/auth');
 
 // 🔹 할 일 생성
 router.post('/', authenticateToken, taskController.createTask);
