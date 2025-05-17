@@ -8,6 +8,7 @@ const appointmentsRouter = require('./routes/appointments');
 const deleteAccountRouter = require('./routes/delete-account');
 const groupRoutes = require('./routes/groupRoutes');  // 그룹 라우트 추가
 const postRoutes = require('./routes/postRoutes');
+const taskRoutes = require('./routes/taskRoutes');  // 할 일 라우트 추가
 
 // 미들웨어 설정
 app.use(cors());
@@ -20,6 +21,7 @@ app.use('/appointments', appointmentsRouter);
 app.use('/delete-account', deleteAccountRouter);
 app.use('/api/groups', groupRoutes);  // 그룹 API 엔드포인트 추가
 app.use('/api/posts', postRoutes);
+app.use('/api/tasks', taskRoutes);  // 할 일 API 엔드포인트 추가
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
