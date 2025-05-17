@@ -1,10 +1,37 @@
 const taskService = require('../services/taskService');
+const { supabase } = require('../config/supabaseClient');
+const admin = require('firebase-admin');
 
 // 🔹 할 일 생성
 const createTask = async (req, res) => {
   try {
     const { groupId, content } = req.body;
     const userId = req.user.uid;
+
+    // Firebase 사용자 정보를 Supabase에 동기화
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('*')
+      .eq('uid', userId)
+      .single();
+
+    if (!existingUser) {
+      // Firebase에서 사용자 정보 가져오기
+      const userRecord = await admin.auth().getUser(userId);
+      const userDoc = await admin.firestore().collection('users').doc(userId).get();
+      
+      // Supabase에 사용자 정보 저장
+      const { error: userError } = await supabase
+        .from('users')
+        .insert({
+          uid: userId,
+          name: userDoc.data()?.name || userRecord.displayName,
+          email: userRecord.email,
+          role: userDoc.data()?.role || '알바생'
+        });
+
+      if (userError) throw new Error('사용자 정보 동기화 실패: ' + userError.message);
+    }
 
     const task = await taskService.createTask({
       groupId,
@@ -28,6 +55,33 @@ const createTask = async (req, res) => {
 const getTasks = async (req, res) => {
   try {
     const { groupId } = req.params;
+    const userId = req.user.uid;
+
+    // Firebase 사용자 정보를 Supabase에 동기화
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('*')
+      .eq('uid', userId)
+      .single();
+
+    if (!existingUser) {
+      // Firebase에서 사용자 정보 가져오기
+      const userRecord = await admin.auth().getUser(userId);
+      const userDoc = await admin.firestore().collection('users').doc(userId).get();
+      
+      // Supabase에 사용자 정보 저장
+      const { error: userError } = await supabase
+        .from('users')
+        .insert({
+          uid: userId,
+          name: userDoc.data()?.name || userRecord.displayName,
+          email: userRecord.email,
+          role: userDoc.data()?.role || '알바생'
+        });
+
+      if (userError) throw new Error('사용자 정보 동기화 실패: ' + userError.message);
+    }
+
     const tasks = await taskService.getTasks(groupId);
 
     res.status(200).json({

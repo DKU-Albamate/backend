@@ -7,7 +7,7 @@ const createTask = async ({ groupId, content, userId }) => {
     .insert({
       group_id: groupId,
       content,
-      created_by: userId,
+      user_uid: userId,
     })
     .select()
     .single();
@@ -22,8 +22,8 @@ const getTasks = async (groupId) => {
     .from('tasks')
     .select(`
       *,
-      created_by:users!tasks_created_by_fkey (
-        id,
+      user:users!tasks_user_uid_fkey (
+        uid,
         name
       )
     `)
@@ -40,7 +40,7 @@ const deleteTask = async (taskId, userId) => {
     .from('tasks')
     .delete()
     .eq('id', taskId)
-    .eq('created_by', userId);
+    .eq('user_uid', userId);
 
   if (error) throw new Error(error.message);
 };
@@ -59,7 +59,7 @@ const toggleTaskCompletion = async (taskId, userId) => {
     .from('tasks')
     .update({ is_completed: !task.is_completed })
     .eq('id', taskId)
-    .eq('created_by', userId);
+    .eq('user_uid', userId);
 
   if (error) throw new Error(error.message);
 };
