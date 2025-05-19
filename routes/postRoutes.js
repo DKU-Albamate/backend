@@ -3,6 +3,14 @@ const express = require('express');
 const router = express.Router();
 const authenticate = require('../middlewares/auth');
 const postController = require('../controllers/postController');
+const multer = require('multer');
+
+// multer 설정
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
+// 이미지 업로드 라우트
+router.post('/upload-image', authenticate, upload.single('image'), postController.uploadImage);
 
 // 게시글 작성
 router.post('/', authenticate, postController.createPost);

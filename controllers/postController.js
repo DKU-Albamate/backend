@@ -1,10 +1,54 @@
 const { supabase } = require('../config/supabaseClient');
+const multer = require('multer');
+const { v4: uuidv4 } = require('uuid');
 
 const ALLOWED_CATEGORIES = ['안내사항', '신메뉴공지', '대타구하기'];
 
+// 이미지 업로드를 위한 임시 저장소 설정
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
+// 🔹 이미지 업로드
+const uploadImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: '이미지가 없습니다.' });
+    }
+
+    const file = req.file;
+    const fileExt = file.originalname.split('.').pop();
+    const fileName = `${uuidv4()}.${fileExt}`;
+    const filePath = `post-images/${fileName}`;
+
+    // Supabase Storage에 이미지 업로드
+    const { data, error } = await supabase.storage
+      .from('post-images')
+      .upload(filePath, file.buffer, {
+        contentType: file.mimetype,
+      });
+
+    if (error) throw error;
+
+    // 이미지 URL 가져오기
+    const { data: { publicUrl } } = supabase.storage
+      .from('post-images')
+      .getPublicUrl(filePath);
+
+    res.status(200).json({ 
+      success: true, 
+      imageUrl: publicUrl 
+    });
+  } catch (error) {
+    res.status(400).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+};
+
 // 🔹 글 작성
 const createPost = async (req, res) => {
-  const { groupId, title, content, category } = req.body;
+  const { groupId, title, content, category, imageUrl } = req.body;
   const userUid = req.user.uid;
 
   if (!ALLOWED_CATEGORIES.includes(category)) {
@@ -17,6 +61,7 @@ const createPost = async (req, res) => {
     title,
     content,
     category,
+    image_url: imageUrl, // 이미지 URL 추가
   }).select().single();
 
   if (error) return res.status(400).json({ success: false, message: error.message });
@@ -39,7 +84,7 @@ const getPostsByGroup = async (req, res) => {
 // 🔹 글 수정
 const updatePost = async (req, res) => {
   const { postId } = req.params;
-  const { title, content } = req.body;
+  const { title, content, imageUrl } = req.body;
   const userUid = req.user.uid;
 
   const { data: post, error: fetchError } = await supabase.from('board_posts')
@@ -59,7 +104,12 @@ const updatePost = async (req, res) => {
   }
 
   const { error: updateError } = await supabase.from('board_posts')
-    .update({ title, content, updated_at: new Date() })
+    .update({ 
+      title, 
+      content, 
+      image_url: imageUrl, // 이미지 URL 업데이트 추가
+      updated_at: new Date() 
+    })
     .eq('id', postId);
 
   if (updateError)
@@ -89,6 +139,14 @@ const deletePost = async (req, res) => {
     return res.status(403).json({ success: false, message: '삭제 권한이 없습니다.' });
   }
 
+  // 이미지가 있다면 Supabase Storage에서도 삭제
+  if (post.image_url) {
+    const imagePath = post.image_url.split('/').pop();
+    await supabase.storage
+      .from('post-images')
+      .remove([`post-images/${imagePath}`]);
+  }
+
   const { error } = await supabase.from('board_posts').delete().eq('id', postId);
 
   if (error) return res.status(400).json({ success: false, message: error.message });
@@ -110,9 +168,9 @@ const addComment = async (req, res) => {
   res.status(201).json({ success: true, data });
 };
 
-// 댓글 삭제 
+// 🔹 댓글 삭제
 const deleteComment = async (req, res) => {
-  const { commentId, postId } = req.params; // ✅ postId도 받음 (비록 안 쓰더라도)
+  const { commentId, postId } = req.params;
   const userUid = req.user.uid;
 
   const { data: comment, error: fetchError } = await supabase
@@ -185,7 +243,6 @@ const getCheckmark = async (req, res) => {
   res.status(200).json({ success: true, isChecked: data?.is_checked ?? false });
 };
 
-// 🔹 export
 module.exports = {
   createPost,
   getPostsByGroup,
@@ -196,4 +253,5 @@ module.exports = {
   getComments,
   updateCheckmark,
   getCheckmark,
+  uploadImage, // 새로운 이미지 업로드 함수 추가
 };
