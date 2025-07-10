@@ -22,6 +22,7 @@ app.use('/delete-account', deleteAccountRouter);
 app.use('/api/groups', groupRoutes);  // 그룹 API 엔드포인트 추가
 app.use('/api/posts', postRoutes);
 app.use('/api/tasks', taskRoutes);  // 할 일 API 엔드포인트 추가
+app.use('/ocr', require('./routes/ocr'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

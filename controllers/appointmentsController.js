@@ -6,16 +6,20 @@ const supabase = createClient(
 );
 
 exports.createAppointment = async (req, res) => {
-  const { user_uid, title, start_time, end_time, color } = req.body;
+  const {
+    user_uid, title, start_time, end_time, color,
+    source = 'manual'            // ← 한 줄 추가
+  } = req.body;
 
   const { data, error } = await supabase
     .from('appointments')
-    .insert([{ user_uid, title, start_time, end_time, color }])
+    .insert([{ user_uid, title, start_time, end_time, color, source }])
     .select();
-    
+
   if (error) return res.status(400).json({ error: error.message });
   res.status(201).json(data);
 };
+
 
 exports.getAppointments = async (req, res) => {
   const { user_uid } = req.query;
