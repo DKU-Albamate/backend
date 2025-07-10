@@ -23,8 +23,7 @@ exports.handleOcr = async (req, res) => {
     // 1) OCR → 일정 파싱
     const events = await extractSchedule(req.file.buffer, display_name || '');
 
-    if (!events.length) return res.status(200).json({ inserted: 0 });
-
+    if (!events.length) return res.status(200).json({ inserted: 0, schedules: [] });
     // 2) Supabase INSERT (source='ocr')
     const { error } = await supabase
       .from('appointments')
