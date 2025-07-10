@@ -37,7 +37,10 @@ exports.handleOcr = async (req, res) => {
       })));
 
     if (error) throw error;
-    res.status(201).json({ inserted: events.length });
+       res.status(201).json({
+        inserted : events.length,
+        schedules: events
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
