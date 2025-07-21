@@ -132,44 +132,35 @@ async function callClovaOcr(imgBuf) {
  */
 exports.healthCheck = async (req, res) => {
   try {
-    // Clova OCR 서비스 연결 테스트
-    const axios = require('axios');
-    const testResponse = await axios.post(
-      process.env.CLOVA_URL,
-      {
-        version: 'V2',
-        requestId: require('uuid').v4(),
-        timestamp: Date.now(),
-        enableTableDetection: true,
-        lang: 'ko',
-        images: [{ 
-          name: 'test', 
-          format: 'jpg', 
-          data: Buffer.from('test').toString('base64') 
-        }],
-      },
-      {
-        headers: {
-          'X-OCR-SECRET': process.env.CLOVA_SECRET,
-          'Content-Type': 'application/json',
-        },
-        timeout: 5000
-      }
-    );
-    
+    // 환경변수만 확인 (실제 API 호출 없음)
     const healthStatus = {
       status: 'healthy',
-      clova: 'connected',
+      clova: process.env.CLOVA_URL && process.env.CLOVA_SECRET ? 'configured' : 'not_configured',
       gemini: process.env.GEMINI_API_KEY ? 'configured' : 'not_configured',
+      supabase: process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY ? 'configured' : 'not_configured',
       timestamp: new Date().toISOString()
     };
     
-    res.json(healthStatus);
+    // 모든 필수 환경변수가 설정되어 있는지 확인
+    const allConfigured = healthStatus.clova === 'configured' && 
+                         healthStatus.gemini === 'configured' && 
+                         healthStatus.supabase === 'configured';
+    
+    if (allConfigured) {
+      res.json(healthStatus);
+    } else {
+      res.status(503).json({
+        ...healthStatus,
+        status: 'unhealthy',
+        error: '일부 환경변수가 설정되지 않았습니다'
+      });
+    }
   } catch (error) {
     res.status(503).json({
       status: 'unhealthy',
-      clova: 'disconnected',
-      gemini: process.env.GEMINI_API_KEY ? 'configured' : 'not_configured',
+      clova: 'error',
+      gemini: 'error',
+      supabase: 'error',
       error: error.message,
       timestamp: new Date().toISOString()
     });
