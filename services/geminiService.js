@@ -3,7 +3,14 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // Gemini API 설정
 const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genai.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+const model = genai.getGenerativeModel({ 
+  model: 'gemini-2.0-flash-exp',
+  generationConfig: {
+    temperature: 0.1,        // 0.0 ~ 2.0 (낮을수록 일관성 높음)
+    topP: 0.8,              // 0.0 ~ 1.0 (낮을수록 보수적)
+    seed: 12345             // 고정된 결과를 위한 시드값
+  }
+});
 
 /**
  * CLOVA OCR 결과를 Gemini 2.0 Flash로 분석하여 근무일정 추출

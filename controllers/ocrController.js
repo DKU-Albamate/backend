@@ -80,10 +80,18 @@ exports.handleOcr = async (req, res) => {
 
     console.log(`✅ ${events.length}개 일정 저장 완료`);
     
+    // Flutter 앱에서 기대하는 형식으로 변환
+    const formattedSchedules = events.map(e => ({
+      date: e.date,
+      start: e.start,
+      end: e.end,
+      title: e.title || e.position || '근무'
+    }));
+    
     res.status(201).json({
       message: '일정이 성공적으로 저장되었습니다',
       inserted: events.length,
-      schedules: events,
+      schedules: formattedSchedules,
       savedData: data,
       analysis_method: use_gemini === 'true' ? 'gemini' : 'traditional'
     });
