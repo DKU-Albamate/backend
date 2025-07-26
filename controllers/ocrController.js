@@ -80,7 +80,11 @@ exports.handleOcr = async (req, res) => {
         message: '파싱된 일정이 없습니다',
         inserted: 0, 
         schedules: [],
-        analysis_method: use_gemini === 'true' ? 'gemini' : 'traditional'
+        analysis_method: use_gemini === 'true' ? 'gemini' : 'traditional',
+        retry_info: use_gemini === 'true' ? {
+          max_retries: parseInt(max_retries),
+          retry_attempts: '재시도 과정은 서버 로그에서 확인 가능'
+        } : null
       });
     }
 
@@ -117,7 +121,11 @@ exports.handleOcr = async (req, res) => {
       inserted: events.length,
       schedules: formattedSchedules,
       savedData: data,
-      analysis_method: use_gemini === 'true' ? 'gemini' : 'traditional'
+      analysis_method: use_gemini === 'true' ? 'gemini' : 'traditional',
+      retry_info: use_gemini === 'true' ? {
+        max_retries: parseInt(max_retries),
+        retry_attempts: '재시도 과정은 서버 로그에서 확인 가능'
+      } : null
     });
     
   } catch (err) {
