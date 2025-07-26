@@ -14,9 +14,19 @@ const supabase = createClient(
  *   - user_uid     : UID
  *   - display_name : 이름(선택)
  *   - use_gemini   : Gemini 사용 여부 (선택, 기본값: true)
+ *   - gemini_seed  : Gemini seed 값 (선택, 기본값: 12345)
+ *   - gemini_temperature : Gemini temperature 값 (선택, 기본값: 0.1)
+ *   - gemini_top_p : Gemini topP 값 (선택, 기본값: 0.8)
  */
 exports.handleOcr = async (req, res) => {
-  const { user_uid, display_name, use_gemini = 'true' } = req.body;
+  const { 
+    user_uid, 
+    display_name, 
+    use_gemini = 'true',
+    gemini_seed = '12345',
+    gemini_temperature = '0.1',
+    gemini_top_p = '0.8'
+  } = req.body;
   
   if (!req.file || !user_uid) {
     return res.status(400).json({ 
@@ -26,13 +36,17 @@ exports.handleOcr = async (req, res) => {
         hasFile: !!req.file,
         user_uid: !!user_uid,
         display_name: !!display_name,
-        use_gemini: use_gemini
+        use_gemini: use_gemini,
+        gemini_seed: gemini_seed,
+        gemini_temperature: gemini_temperature,
+        gemini_top_p: gemini_top_p
       }
     });
   }
 
   try {
     console.log(`🔍 OCR 처리 시작 - 사용자: ${user_uid}, 이름: ${display_name || '미지정'}, Gemini: ${use_gemini}`);
+    console.log(`🔧 Gemini 파라미터 - seed: ${gemini_seed}, temperature: ${gemini_temperature}, topP: ${gemini_top_p}`);
     
     // 1) CLOVA OCR 호출
     const ocrData = await callClovaOcr(req.file.buffer);
@@ -43,7 +57,14 @@ exports.handleOcr = async (req, res) => {
     // 2) 일정 분석 (Gemini 또는 기존 방식)
     if (use_gemini === 'true' && process.env.GEMINI_API_KEY) {
       console.log(`🤖 Gemini 2.0 Flash로 일정 분석 중...`);
-      events = await analyzeScheduleWithGemini(ocrData, display_name || '');
+      events = await analyzeScheduleWithGemini(
+        ocrData, 
+        display_name || '', 
+        2025, // year
+        parseInt(gemini_seed),
+        parseFloat(gemini_temperature),
+        parseFloat(gemini_top_p)
+      );
     } else {
       console.log(`📊 기존 방식으로 일정 분석 중...`);
       events = await extractSchedule(req.file.buffer, display_name || '');
