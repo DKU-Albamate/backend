@@ -11,11 +11,11 @@ const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
  * @param {number} year - 연도 (기본값: 2025)
  * @param {number} seed - Gemini seed 값 (기본값: 12345)
  * @param {number} temperature - Gemini temperature 값 (기본값: 0.1)
- * @param {number} topP - Gemini topP 값 (기본값: 0.8)
+ * @param {number} topP - Gemini topP 값 (기본값: 0.3)
  * @param {number} maxRetries - 최대 재시도 횟수 (기본값: 3)
  * @returns {Array} 근무일정 리스트
  */
-async function analyzeScheduleWithGemini(ocrData, targetName, year = 2025, seed = 12345, temperature = 0.1, topP = 0.8, maxRetries = 3) {
+async function analyzeScheduleWithGemini(ocrData, targetName, year = 2025, seed = 12345, temperature = 0.1, topP = 0.3, maxRetries = 3) {
   let lastError = null;
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -31,7 +31,7 @@ async function analyzeScheduleWithGemini(ocrData, targetName, year = 2025, seed 
         // 재시도 시 파라미터를 약간 변경하여 다른 결과 시도
         currentSeed = seed + attempt * 1000; // 다른 seed 값
         currentTemperature = Math.min(temperature + (attempt * 0.1), 1.0); // temperature 증가
-        currentTopP = Math.min(topP + (attempt * 0.05), 0.95); // topP 증가
+        currentTopP = Math.min(topP + (attempt * 0.05), 0.95); // topP 증가 (0.3 기준)
         
         console.log(`🔄 재시도 파라미터 조정 - seed: ${currentSeed}, temperature: ${currentTemperature}, topP: ${currentTopP}`);
       } else {
