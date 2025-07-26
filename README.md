@@ -1,15 +1,14 @@
-# ALBAMATE Backend
+# 🚀 ALBAMATE Backend Server
 
-알바메이트 백엔드 서버 - Clova OCR + Gemini 2.0 Flash 연동
+알바메이트 백엔드 서버 - Clova OCR + Gemini 2.5 Flash Lite 연동
 
-## 주요 기능
+## 📋 주요 기능
 
-- 사용자 인증 (Firebase Auth)
-- 일정 관리 (Supabase)
-- 그룹 관리
-- 게시물 관리
-- 할 일 관리
-- **Clova OCR + Gemini 2.0 Flash를 통한 스케줄 자동 인식**
+- **사용자 인증 및 관리** (Supabase Auth)
+- **그룹 생성 및 관리**
+- **할일 관리**
+- **Clova OCR + Gemini 2.5 Flash Lite를 통한 스케줄 자동 인식**
+- **일정 관리 및 저장**
 
 ## AI OCR 연동
 
@@ -20,7 +19,7 @@
 CLOVA_URL=https://your-clova-ocr-endpoint
 CLOVA_SECRET=your_clova_secret_key
 
-# Gemini 2.0 Flash 설정
+# Gemini 2.5 Flash Lite 설정
 GEMINI_API_KEY=your_gemini_api_key
 
 # Supabase 설정
@@ -95,7 +94,7 @@ GET /ocr/health
 
 ## AI 분석 방식 비교
 
-### 🤖 Gemini 2.0 Flash (권장)
+### 🤖 Gemini 2.5 Flash Lite (권장)
 - **장점**: 
   - 더 정확한 텍스트 인식
   - 복잡한 표 구조 이해
@@ -159,7 +158,7 @@ curl -X POST http://localhost:3000/ocr/schedule/gemini \
 2. CLOVA OCR 서비스 활성화
 3. API URL과 Secret 키 발급
 
-### Gemini 2.0 Flash
-1. [Google AI Studio](https://aistudio.google.com/) 접속
-2. API 키 생성
-3. Gemini 2.0 Flash 모델 선택
+### Gemini 2.5 Flash Lite
+1. Google AI Studio에서 API 키 발급
+2. 환경변수에 GEMINI_API_KEY 설정
+3. Gemini 2.5 Flash Lite 모델 선택
