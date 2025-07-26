@@ -17,6 +17,7 @@ const supabase = createClient(
  *   - gemini_seed  : Gemini seed 값 (선택, 기본값: 12345)
  *   - gemini_temperature : Gemini temperature 값 (선택, 기본값: 0.1)
  *   - gemini_top_p : Gemini topP 값 (선택, 기본값: 0.8)
+ *   - max_retries  : 최대 재시도 횟수 (선택, 기본값: 3)
  */
 exports.handleOcr = async (req, res) => {
   const { 
@@ -25,7 +26,8 @@ exports.handleOcr = async (req, res) => {
     use_gemini = 'true',
     gemini_seed = '12345',
     gemini_temperature = '0.1',
-    gemini_top_p = '0.8'
+    gemini_top_p = '0.8',
+    max_retries = '3'
   } = req.body;
   
   if (!req.file || !user_uid) {
@@ -46,7 +48,7 @@ exports.handleOcr = async (req, res) => {
 
   try {
     console.log(`🔍 OCR 처리 시작 - 사용자: ${user_uid}, 이름: ${display_name || '미지정'}, Gemini: ${use_gemini}`);
-    console.log(`🔧 Gemini 파라미터 - seed: ${gemini_seed}, temperature: ${gemini_temperature}, topP: ${gemini_top_p}`);
+    console.log(`🔧 Gemini 파라미터 - seed: ${gemini_seed}, temperature: ${gemini_temperature}, topP: ${gemini_top_p}, maxRetries: ${max_retries}`);
     
     // 1) CLOVA OCR 호출
     const ocrData = await callClovaOcr(req.file.buffer);
@@ -63,7 +65,8 @@ exports.handleOcr = async (req, res) => {
         2025, // year
         parseInt(gemini_seed),
         parseFloat(gemini_temperature),
-        parseFloat(gemini_top_p)
+        parseFloat(gemini_top_p),
+        parseInt(max_retries)
       );
     } else {
       console.log(`📊 기존 방식으로 일정 분석 중...`);
