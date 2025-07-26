@@ -16,7 +16,7 @@ const supabase = createClient(
  *   - use_gemini   : Gemini 사용 여부 (선택, 기본값: true)
  *   - gemini_seed  : Gemini seed 값 (선택, 기본값: 12345)
  *   - gemini_temperature : Gemini temperature 값 (선택, 기본값: 0.1)
- *   - gemini_top_p : Gemini topP 값 (선택, 기본값: 0.8)
+ *   - gemini_top_p : Gemini topP 값 (선택, 기본값: 0.3)
  *   - max_retries  : 최대 재시도 횟수 (선택, 기본값: 3)
  */
 exports.handleOcr = async (req, res) => {
@@ -26,7 +26,7 @@ exports.handleOcr = async (req, res) => {
     use_gemini = 'true',
     gemini_seed = '12345',
     gemini_temperature = '0.1',
-    gemini_top_p = '0.8',
+    gemini_top_p = '0.3',
     max_retries = '3'
   } = req.body;
   
