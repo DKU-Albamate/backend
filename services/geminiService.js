@@ -1,27 +1,33 @@
 // services/geminiService.js
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-// Gemini API 설정
+// Gemini API 설정 (기본값)
 const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genai.getGenerativeModel({ 
-  model: 'gemini-2.0-flash-exp',
-  generationConfig: {
-    temperature: 0.1,        // 0.0 ~ 2.0 (낮을수록 일관성 높음)
-    topP: 0.8,              // 0.0 ~ 1.0 (낮을수록 보수적)
-    seed: 12345             // 고정된 결과를 위한 시드값
-  }
-});
 
 /**
  * CLOVA OCR 결과를 Gemini 2.0 Flash로 분석하여 근무일정 추출
  * @param {Object} ocrData - CLOVA OCR JSON 결과
  * @param {string} targetName - 찾을 직원 이름
  * @param {number} year - 연도 (기본값: 2025)
+ * @param {number} seed - Gemini seed 값 (기본값: 12345)
+ * @param {number} temperature - Gemini temperature 값 (기본값: 0.1)
+ * @param {number} topP - Gemini topP 값 (기본값: 0.8)
  * @returns {Array} 근무일정 리스트
  */
-async function analyzeScheduleWithGemini(ocrData, targetName, year = 2025) {
+async function analyzeScheduleWithGemini(ocrData, targetName, year = 2025, seed = 12345, temperature = 0.1, topP = 0.8) {
   try {
     console.log(`🤖 Gemini 2.0 Flash 분석 시작 - 대상: ${targetName}`);
+    console.log(`🔧 Gemini 파라미터 - seed: ${seed}, temperature: ${temperature}, topP: ${topP}`);
+    
+    // 동적으로 모델 생성 (파라미터 적용)
+    const model = genai.getGenerativeModel({ 
+      model: 'gemini-2.0-flash-exp',
+      generationConfig: {
+        temperature: temperature,
+        topP: topP,
+        seed: seed
+      }
+    });
     
     // 디버깅: OCR 데이터 구조 확인
     console.log(`🔍 OCR 데이터 구조 분석:`);
@@ -135,24 +141,33 @@ ${JSON.stringify(ocrData, null, 2)}
 `;
 
     // Gemini API 호출
+    console.log(`🤖 Gemini API 호출 시작...`);
+    console.log(`   📝 프롬프트 길이: ${prompt.length} 문자`);
+    console.log(`   🔧 사용된 파라미터: seed=${seed}, temperature=${temperature}, topP=${topP}`);
+    
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const responseText = response.text().trim();
     
     // 디버깅: Gemini 응답 로그 출력
     console.log(`🤖 Gemini 응답:`);
-    console.log(`   ${responseText}`);
+    console.log(`   📏 응답 길이: ${responseText.length} 문자`);
+    console.log(`   📄 응답 내용: ${responseText}`);
     
     // 코드 블록 제거 (```json ... ```)
     let cleanResponse = responseText;
     if (cleanResponse.startsWith('```json')) {
       cleanResponse = cleanResponse.substring(7); // ```json 제거
+      console.log(`   🧹 JSON 코드 블록 제거됨`);
     }
     if (cleanResponse.endsWith('```')) {
       cleanResponse = cleanResponse.substring(0, cleanResponse.length - 3); // ``` 제거
+      console.log(`   🧹 코드 블록 끝 제거됨`);
     }
     cleanResponse = cleanResponse.trim();
     
+    console.log(`   🧹 정리된 응답: ${cleanResponse}`);
+
     // JSON 파싱
     try {
       const schedules = JSON.parse(cleanResponse);
