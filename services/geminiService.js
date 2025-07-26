@@ -194,6 +194,20 @@ ${JSON.stringify(ocrData, null, 2)}
         // 결과 검증
         if (Array.isArray(schedules)) {
           console.log(`✅ Gemini 분석 완료 (시도 ${attempt}/${maxRetries}): ${schedules.length}개 일정 발견`);
+          
+          // 일정이 0개인 경우 재시도 고려
+          if (schedules.length === 0) {
+            if (attempt < maxRetries) {
+              console.log(`⚠️ 일정이 0개입니다. 재시도 예정... (${attempt + 1}/${maxRetries})`);
+              lastError = new Error('No schedules found');
+              continue;
+            } else {
+              console.log(`❌ 모든 시도 후에도 일정을 찾을 수 없습니다 (${maxRetries}회 시도)`);
+              return [];
+            }
+          }
+          
+          // 일정이 1개 이상인 경우 성공
           for (const schedule of schedules) {
             console.log(`   - ${schedule.date} ${schedule.start}-${schedule.end} (${schedule.position})`);
           }
