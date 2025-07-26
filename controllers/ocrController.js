@@ -56,7 +56,7 @@ exports.handleOcr = async (req, res) => {
     
     // 2) 일정 분석 (Gemini 또는 기존 방식)
     if (use_gemini === 'true' && process.env.GEMINI_API_KEY) {
-      console.log(`🤖 Gemini 2.0 Flash로 일정 분석 중...`);
+      console.log(`🤖 Gemini 2.5 Flash Lite로 일정 분석 중...`);
       events = await analyzeScheduleWithGemini(
         ocrData, 
         display_name || '', 

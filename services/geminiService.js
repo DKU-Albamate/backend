@@ -5,7 +5,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 /**
- * CLOVA OCR 결과를 Gemini 2.0 Flash로 분석하여 근무일정 추출
+ * CLOVA OCR 결과를 Gemini 2.5 Flash Lite로 분석하여 근무일정 추출
  * @param {Object} ocrData - CLOVA OCR JSON 결과
  * @param {string} targetName - 찾을 직원 이름
  * @param {number} year - 연도 (기본값: 2025)
@@ -16,12 +16,12 @@ const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
  */
 async function analyzeScheduleWithGemini(ocrData, targetName, year = 2025, seed = 12345, temperature = 0.1, topP = 0.8) {
   try {
-    console.log(`🤖 Gemini 2.0 Flash 분석 시작 - 대상: ${targetName}`);
+    console.log(`🤖 Gemini 2.5 Flash Lite 분석 시작 - 대상: ${targetName}`);
     console.log(`🔧 Gemini 파라미터 - seed: ${seed}, temperature: ${temperature}, topP: ${topP}`);
     
     // 동적으로 모델 생성 (파라미터 적용)
     const model = genai.getGenerativeModel({ 
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-2.5-flash-lite',
       generationConfig: {
         temperature: temperature,
         topP: topP,
