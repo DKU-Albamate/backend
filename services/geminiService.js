@@ -30,8 +30,8 @@ async function analyzeScheduleWithGemini(ocrData, targetName, year = 2025, seed 
       if (attempt > 1) {
         // 재시도 시 파라미터를 약간 변경하여 다른 결과 시도
         currentSeed = seed + attempt * 1000; // 다른 seed 값
-        currentTemperature = Math.min(temperature + (attempt * 0.1), 1.0); // temperature 증가
-        currentTopP = Math.min(topP + (attempt * 0.05), 0.95); // topP 증가 (0.3 기준)
+        currentTemperature = Math.min(temperature + (attempt * 0.05), 0.3); // 더 작은 증가
+        currentTopP = Math.min(topP + (attempt * 0.02), 0.4); // 더 작은 증가
         
         console.log(`🔄 재시도 파라미터 조정 - seed: ${currentSeed}, temperature: ${currentTemperature}, topP: ${currentTopP}`);
       } else {
@@ -113,30 +113,34 @@ CLOVA OCR로 추출된 표 데이터를 분석하여 특정 직원의 근무일�
 ${JSON.stringify(ocrData, null, 2)}
 
 **분석 방법**:
-1. **단계별 분석**:
-   - 먼저 표의 헤더 행에서 모든 날짜를 찾으세요
-   - 각 날짜 열에서 ${targetName}이 언급된 셀을 찾으세요
-   - 해당 셀의 시간 정보를 추출하세요
+1. **표 구조 파악**:
+   - 첫 번째 행(헤더)에서 요일과 날짜 정보를 찾으세요
+   - "월", "화", "수", "목", "금", "토", "일" 또는 "07월 07일", "07월 08일" 등의 패턴을 찾으세요
+   - 각 날짜 열의 인덱스를 정확히 기록하세요
 
-2. **날짜 매칭**:
-   - 헤더의 날짜와 ${targetName}이 있는 셀의 열 인덱스를 매칭하세요
-   - 예: 헤더에 "07월 11일"이 열17에 있다면, 열17에서 ${targetName} 찾기
+2. **직원 검색**:
+   - 모든 셀에서 "${targetName}" 텍스트를 찾으세요
+   - 해당 셀이 속한 행(시간대)과 열(날짜)을 정확히 파악하세요
+   - 셀 내용에서 시간 정보를 추출하세요 (예: "김지성 15:30")
 
-3. **시간 추출**:
-   - ${targetName}이 있는 셀에서 시간 정보 추출
-   - "HH:MM" 형식으로 변환
-   - 종료 시간이 없으면 시작 시간 + 1시간
+3. **시간 정보 추출**:
+   - 셀 내용에서 시작 시간과 종료 시간을 분리하세요
+   - "이름 종료시간" 형식이면 시작 시간은 해당 행의 시간을 사용하세요
+   - 종료 시간이 명시되어 있으면 그 값을 사용하세요
 
 **날짜 형식 처리**:
-- "MM월 DD일" 형식 → "YYYY-MM-DD"로 변환
-- "MM/DD" 형식 → "YYYY-MM-DD"로 변환
-- "MM-DD" 형식 → "YYYY-MM-DD"로 변환
+- "MM월 DD일" → "YYYY-MM-DD" (예: "07월 07일" → "2025-07-07")
+- "MM/DD" → "YYYY-MM-DD" (예: "07/07" → "2025-07-07")
 - 연도가 없는 경우 ${year}년 사용
 
 **시간 형식 처리**:
-- "HH:MM" 형식 유지
-- "HH시 MM분" → "HH:MM"으로 변환
-- "HH.MM" → "HH:MM"으로 변환
+- "HH:MM" 형식으로 통일
+- "HH시 MM분" → "HH:MM"
+- "HH.MM" → "HH:MM"
+
+**포지션 정보**:
+- 셀이 속한 열의 헤더에서 포지션 정보를 찾으세요
+- "포지션1", "포지션2", "포지션3", "선임/리콜" 등
 
 **반환 형식** (JSON 배열):
 [
@@ -152,11 +156,11 @@ ${JSON.stringify(ocrData, null, 2)}
 **매우 중요한 주의사항**:
 - 정확한 JSON 형식으로만 응답하세요
 - 설명이나 추가 텍스트는 포함하지 마세요
-- 날짜와 시간 형식을 정확히 지켜주세요
-- 찾을 수 없는 경우 빈 배열 []을 반환하세요
 - **${targetName}이 언급된 모든 셀을 반드시 포함하세요**
 - **열 인덱스를 정확히 매칭하여 날짜와 시간을 연결하세요**
 - **하나도 빠뜨리지 마세요**
+- 찾을 수 없는 경우 빈 배열 []을 반환하세요
+- **시간 정보가 명확하지 않으면 해당 일정을 제외하세요**
 `;
 
       // Gemini API 호출
