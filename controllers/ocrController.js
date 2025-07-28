@@ -24,7 +24,7 @@ exports.handleOcr = async (req, res) => {
     user_uid, 
     display_name, 
     use_gemini = 'true',
-    gemini_seed = '12345',
+    gemini_seed = '1000',
     gemini_temperature = '0.1',
     gemini_top_p = '0.3',
     max_retries = '3'

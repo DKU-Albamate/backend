@@ -15,7 +15,7 @@ const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
  * @param {number} maxRetries - 최대 재시도 횟수 (기본값: 3)
  * @returns {Array} 근무일정 리스트
  */
-async function analyzeScheduleWithGemini(ocrData, targetName, year = 2025, seed = 12345, temperature = 0.1, topP = 0.3, maxRetries = 3) {
+async function analyzeScheduleWithGemini(ocrData, targetName, year = 2025, seed = 1000, temperature = 0.1, topP = 0.3, maxRetries = 3) {
   let lastError = null;
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
