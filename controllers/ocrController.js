@@ -24,10 +24,10 @@ exports.handleOcr = async (req, res) => {
     user_uid, 
     display_name, 
     use_gemini = 'true',
-    gemini_seed = '1000',
-    gemini_temperature = '0.1',
-    gemini_top_p = '0.8',
-    max_retries = '3'
+    gemini_seed = '42',
+    gemini_temperature = '0.05',
+    gemini_top_p = '0.3',
+    max_retries = '5'
   } = req.body;
   
   if (!req.file || !user_uid) {

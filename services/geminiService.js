@@ -9,13 +9,13 @@ const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
  * @param {Object} ocrData - CLOVA OCR JSON 결과
  * @param {string} targetName - 찾을 직원 이름
  * @param {number} year - 연도 (기본값: 2025)
- * @param {number} seed - Gemini seed 값 (기본값: 1000)
- * @param {number} temperature - Gemini temperature 값 (기본값: 0.1)
- * @param {number} topP - Gemini topP 값 (기본값: 0.8)
- * @param {number} maxRetries - 최대 재시도 횟수 (기본값: 3)
+ * @param {number} seed - Gemini seed 값 (기본값: 42)
+ * @param {number} temperature - Gemini temperature 값 (기본값: 0.05)
+ * @param {number} topP - Gemini topP 값 (기본값: 0.3)
+ * @param {number} maxRetries - 최대 재시도 횟수 (기본값: 5)
  * @returns {Array} 근무일정 리스트
  */
-async function analyzeScheduleWithGemini(ocrData, targetName, year = 2025, seed = 1000, temperature = 0.1, topP = 0.8, maxRetries = 3) {
+async function analyzeScheduleWithGemini(ocrData, targetName, year = 2025, seed = 42, temperature = 0.05, topP = 0.3, maxRetries = 5) {
   let lastError = null;
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -28,10 +28,10 @@ async function analyzeScheduleWithGemini(ocrData, targetName, year = 2025, seed 
       let currentTopP = topP;
       
       if (attempt > 1) {
-        // 재시도 시 파라미터를 약간 변경하여 다른 결과 시도
-        currentSeed = seed + attempt * 1000; // 다른 seed 값
-        currentTemperature = Math.min(temperature + (attempt * 0.05), 0.3); // 더 작은 증가
-        currentTopP = Math.min(topP + (attempt * 0.02), 0.4); // 더 작은 증가
+        // 재시도 시 파라미터를 점진적으로 조정
+        currentSeed = seed + attempt * 100; // 더 작은 seed 변화
+        currentTemperature = Math.min(temperature + (attempt * 0.02), 0.15); // 더 보수적인 증가
+        currentTopP = Math.min(topP + (attempt * 0.05), 0.5); // 점진적 증가
         
         console.log(`🔄 재시도 파라미터 조정 - seed: ${currentSeed}, temperature: ${currentTemperature}, topP: ${currentTopP}`);
       } else {
@@ -103,8 +103,7 @@ async function analyzeScheduleWithGemini(ocrData, targetName, year = 2025, seed 
       
       // Gemini에게 전달할 프롬프트 구성
       const prompt = `
-당신은 근무일정표를 분석하는 전문가입니다.
-CLOVA OCR로 추출된 표 데이터를 분석하여 특정 직원의 근무일정을 JSON 형태로 반환해주세요.
+당신은 근무일정표 분석 전문가입니다. 정확하고 일관된 결과를 제공하는 것이 최우선입니다.
 
 **분석 대상 직원**: ${targetName}
 **기준 연도**: ${year}년
@@ -112,38 +111,32 @@ CLOVA OCR로 추출된 표 데이터를 분석하여 특정 직원의 근무일�
 **CLOVA OCR 결과**:
 ${JSON.stringify(ocrData, null, 2)}
 
-**분석 방법**:
-1. **표 구조 파악**:
-   - 첫 번째 행(헤더)에서 요일과 날짜 정보를 찾으세요
-   - "월", "화", "수", "목", "금", "토", "일" 또는 "07월 07일", "07월 08일" 등의 패턴을 찾으세요
-   - 각 날짜 열의 인덱스를 정확히 기록하세요
+**📋 분석 프로세스 (순서대로 엄격히 따르세요)**:
 
-2. **직원 검색**:
-   - 모든 셀에서 "${targetName}" 텍스트를 찾으세요
-   - 해당 셀이 속한 행(시간대)과 열(날짜)을 정확히 파악하세요
-   - 셀 내용에서 시간 정보를 추출하세요 (예: "김지성 15:30")
+1. **📅 날짜 헤더 분석**:
+   - 첫 번째 행(헤더)에서 날짜 정보를 찾으세요
+   - "07월 07일", "07/07", "월 07/07" 등의 패턴을 찾으세요
+   - 각 날짜 열의 columnIndex를 정확히 기록하세요
 
-3. **시간 정보 추출**:
-   - 셀 내용에서 "이름 종료시간" 형식을 파악하세요 (예: "김지성 15:30")
-   - **시작 시간**: 해당 셀이 위치한 행(시간대)의 시간을 사용하세요
-   - **종료 시간**: 셀 내용에 명시된 시간을 사용하세요
-   - 예시: 09:00 행에 "김지성 15:30"이 있으면 → 시작: 09:00, 종료: 15:30
+2. **⏰ 시간 행 분석**:
+   - 첫 번째 열에서 시간 정보를 찾으세요 (09:00, 10:00 등)
+   - 각 시간 행의 rowIndex를 정확히 기록하세요
 
-**날짜 형식 처리**:
-- "MM월 DD일" → "YYYY-MM-DD" (예: "07월 07일" → "2025-07-07")
-- "MM/DD" → "YYYY-MM-DD" (예: "07/07" → "2025-07-07")
-- 연도가 없는 경우 ${year}년 사용
+3. **👤 직원 검색**:
+   - 모든 셀에서 "${targetName}" 텍스트를 정확히 찾으세요
+   - 해당 셀의 rowIndex(시간)와 columnIndex(날짜)를 기록하세요
 
-**시간 형식 처리**:
-- "HH:MM" 형식으로 통일
-- "HH시 MM분" → "HH:MM"
-- "HH.MM" → "HH:MM"
+4. **🕐 시간 정보 추출**:
+   - **시작 시간**: 셀이 위치한 행의 시간 (rowIndex 기준)
+   - **종료 시간**: 셀 내용에서 추출 (예: "김지성 15:30" → 15:30)
+   - **포지션**: 셀이 속한 열의 헤더에서 추출
 
-**포지션 정보**:
-- 셀이 속한 열의 헤더에서 포지션 정보를 찾으세요
-- "포지션1", "포지션2", "포지션3", "선임/리콜" 등
+**📝 데이터 변환 규칙**:
+- 날짜: "MM월 DD일" → "YYYY-MM-DD" (예: "07월 07일" → "2025-07-07")
+- 시간: "HH:MM" 형식으로 통일
+- 포지션: 열 헤더의 텍스트 그대로 사용
 
-**반환 형식** (JSON 배열):
+**🎯 반환 형식** (JSON 배열만):
 [
   {
     "name": "${targetName}",
@@ -154,26 +147,20 @@ ${JSON.stringify(ocrData, null, 2)}
   }
 ]
 
-**구체적인 예시**:
-- 09:00 행의 포지션1 열에 "김지성 15:30"이 있으면:
-  {
-    "name": "김지성",
-    "position": "포지션1", 
-    "date": "2025-07-07",
-    "start": "09:00",
-    "end": "15:30"
-  }
+**⚠️ 엄격한 규칙**:
+1. JSON 형식만 반환하세요 (설명 없음)
+2. ${targetName}이 포함된 모든 셀을 반드시 포함하세요
+3. 시작 시간은 반드시 행의 시간을 사용하세요
+4. 종료 시간은 셀 내용의 시간을 사용하세요
+5. 시간 정보가 불분명하면 해당 일정을 제외하세요
+6. 찾을 수 없으면 빈 배열 []을 반환하세요
 
-**매우 중요한 주의사항**:
-- 정확한 JSON 형식으로만 응답하세요
-- 설명이나 추가 텍스트는 포함하지 마세요
-- **${targetName}이 언급된 모든 셀을 반드시 포함하세요**
-- **열 인덱스를 정확히 매칭하여 날짜와 시간을 연결하세요**
-- **하나도 빠뜨리지 마세요**
-- 찾을 수 없는 경우 빈 배열 []을 반환하세요
-- **시간 정보가 명확하지 않으면 해당 일정을 제외하세요**
-- **시작 시간은 반드시 해당 셀이 위치한 행의 시간을 사용하세요**
-- **종료 시간은 셀 내용에 명시된 시간을 사용하세요**
+**✅ 검증 체크리스트**:
+- [ ] 모든 ${targetName} 셀이 포함되었는가?
+- [ ] 시작 시간이 행 시간과 일치하는가?
+- [ ] 종료 시간이 셀 내용과 일치하는가?
+- [ ] 날짜 형식이 YYYY-MM-DD인가?
+- [ ] 시간 형식이 HH:MM인가?
 `;
 
       // Gemini API 호출
