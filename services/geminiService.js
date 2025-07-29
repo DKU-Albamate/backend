@@ -9,13 +9,13 @@ const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
  * @param {Object} ocrData - CLOVA OCR JSON 결과
  * @param {string} targetName - 찾을 직원 이름
  * @param {number} year - 연도 (기본값: 2025)
- * @param {number} seed - Gemini seed 값 (기본값: 12345)
+ * @param {number} seed - Gemini seed 값 (기본값: 1000)
  * @param {number} temperature - Gemini temperature 값 (기본값: 0.1)
- * @param {number} topP - Gemini topP 값 (기본값: 0.3)
+ * @param {number} topP - Gemini topP 값 (기본값: 0.8)
  * @param {number} maxRetries - 최대 재시도 횟수 (기본값: 3)
  * @returns {Array} 근무일정 리스트
  */
-async function analyzeScheduleWithGemini(ocrData, targetName, year = 2025, seed = 1000, temperature = 0.1, topP = 0.3, maxRetries = 3) {
+async function analyzeScheduleWithGemini(ocrData, targetName, year = 2025, seed = 1000, temperature = 0.1, topP = 0.8, maxRetries = 3) {
   let lastError = null;
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
