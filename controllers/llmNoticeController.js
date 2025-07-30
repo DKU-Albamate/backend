@@ -12,7 +12,7 @@ exports.generateLLMNotice = async (req, res) => {
     const today = new Date().toISOString().split('T')[0];  // 오늘 날짜 (ex: 2025-07-29)
 
     const response = await axios.post(
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + process.env.GEMINI_API_KEY,
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=' + process.env.GEMINI_API_KEY,
     {
         contents: [{
         parts: [{
