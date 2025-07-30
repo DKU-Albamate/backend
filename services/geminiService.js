@@ -19,7 +19,7 @@ async function analyzeScheduleWithGemini(ocrData, targetName, year = 2025, seed 
   let lastError = null;
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
+  try {
       console.log(`🤖 Gemini 2.5 Flash Lite 분석 시작 (시도 ${attempt}/${maxRetries}) - 대상: ${targetName}`);
       
       // 재시도 시 파라미터 조정 (더 다양한 결과를 위해)
@@ -47,8 +47,8 @@ async function analyzeScheduleWithGemini(ocrData, targetName, year = 2025, seed 
           seed: currentSeed
         }
       });
-      
-      // 디버깅: OCR 데이터 구조 확인
+    
+          // 디버깅: OCR 데이터 구조 확인
       console.log(`🔍 OCR 데이터 구조 분석:`);
       try {
         if (ocrData.images && ocrData.images.length > 0) {
@@ -58,8 +58,8 @@ async function analyzeScheduleWithGemini(ocrData, targetName, year = 2025, seed 
             const cells = table.cells || [];
             console.log(`   📊 테이블 정보: ${cells.length}개 셀`);
             
-            // 날짜 정보가 있는 셀들 찾기
-            const dateCells = [];
+            // 7월 11일 특별 검사
+            let hasJuly11 = false;
             for (const cell of cells) {
               const cellText = cell.cellTextLines
                 ?.flatMap(ln => ln.cellWords || [])
@@ -67,42 +67,67 @@ async function analyzeScheduleWithGemini(ocrData, targetName, year = 2025, seed 
                 ?.join(' ')
                 ?.trim() || '';
               
-              // 월/일 패턴 찾기
-              if ((cellText.includes('월') || cellText.includes('/') || cellText.includes('-')) && 
-                  /[1-9]|[12]\d|3[01]/.test(cellText)) {
-                dateCells.push(`행${cell.rowIndex}열${cell.columnIndex}: ${cellText}`);
+              if (cellText.includes('11') || cellText.includes('7월') || cellText.includes('07월')) {
+                console.log(`   🔍 7월 11일 관련 셀 발견: 행${cell.rowIndex}열${cell.columnIndex} - "${cellText}"`);
+                hasJuly11 = true;
               }
             }
-            
-            console.log(`   📅 날짜 관련 셀들: ${dateCells.length}개`);
-            
-            // 대상 직원이 있는 셀들 찾기
-            const targetCells = [];
-            for (const cell of cells) {
-              const cellText = cell.cellTextLines
-                ?.flatMap(ln => ln.cellWords || [])
-                ?.map(w => w.inferText)
-                ?.join(' ')
-                ?.trim() || '';
-              
-              if (cellText.includes(targetName)) {
-                targetCells.push(`행${cell.rowIndex}열${cell.columnIndex}: ${cellText}`);
-              }
+            if (!hasJuly11) {
+              console.log(`   ⚠️ 7월 11일 관련 셀을 찾을 수 없습니다. OCR 인식을 확인해주세요.`);
             }
+          
+          // 날짜 정보가 있는 셀들 찾기 (더 포괄적으로)
+          const dateCells = [];
+          for (const cell of cells) {
+            const cellText = cell.cellTextLines
+              ?.flatMap(ln => ln.cellWords || [])
+              ?.map(w => w.inferText)
+              ?.join(' ')
+              ?.trim() || '';
             
-            console.log(`   👤 ${targetName} 관련 셀들: ${targetCells.length}개`);
-          } else {
-            console.log('   ❌ 테이블 데이터 없음');
+            // 더 포괄적인 날짜 패턴 찾기
+            if (cellText.includes('월') || cellText.includes('/') || cellText.includes('-') || 
+                /\d+월\s*\d+일/.test(cellText) || /\d+\/\d+/.test(cellText) ||
+                cellText.includes('11') || cellText.includes('7월') || cellText.includes('07월')) {
+              dateCells.push(`행${cell.rowIndex}열${cell.columnIndex}: "${cellText}"`);
+            }
+          }
+          
+          console.log(`   📅 날짜 관련 셀들: ${dateCells.length}개`);
+          if (dateCells.length > 0) {
+            console.log(`   📅 날짜 셀 상세: ${dateCells.join(', ')}`);
+          }
+          
+          // 대상 직원이 있는 셀들 찾기 (더 상세한 정보)
+          const targetCells = [];
+          for (const cell of cells) {
+            const cellText = cell.cellTextLines
+              ?.flatMap(ln => ln.cellWords || [])
+              ?.map(w => w.inferText)
+              ?.join(' ')
+              ?.trim() || '';
+            
+            if (cellText.includes(targetName)) {
+              targetCells.push(`행${cell.rowIndex}열${cell.columnIndex}: "${cellText}"`);
+            }
+          }
+          
+          console.log(`   👤 ${targetName} 관련 셀들: ${targetCells.length}개`);
+          if (targetCells.length > 0) {
+            console.log(`   👤 직원 셀 상세: ${targetCells.join(', ')}`);
           }
         } else {
-          console.log('   ❌ 이미지 데이터 없음');
+          console.log('   ❌ 테이블 데이터 없음');
         }
-      } catch (e) {
-        console.log(`   ❌ 데이터 분석 실패: ${e}`);
+      } else {
+        console.log('   ❌ 이미지 데이터 없음');
       }
-      
-      // Gemini에게 전달할 프롬프트 구성
-      const prompt = `
+    } catch (e) {
+      console.log(`   ❌ 데이터 분석 실패: ${e}`);
+    }
+    
+    // Gemini에게 전달할 프롬프트 구성
+    const prompt = `
 당신은 근무일정표 분석 전문가입니다. 정확하고 일관된 결과를 제공하는 것이 최우선입니다.
 
 **분석 대상 직원**: ${targetName}
@@ -115,7 +140,11 @@ ${JSON.stringify(ocrData, null, 2)}
 
 1. **📅 날짜 헤더 분석**:
    - 첫 번째 행(헤더)에서 날짜 정보를 찾으세요
-   - "07월 07일", "07/07", "월 07/07" 등의 패턴을 찾으세요
+   - 다양한 패턴을 모두 확인하세요:
+     * "07월 07일", "7월 7일", "07/07", "7/7"
+     * "07월 08일", "7월 8일", "07/08", "7/8"  
+     * "07월 11일", "7월 11일", "07/11", "7/11"
+     * "월 07/07", "화 07/08", "금 07/11" 등
    - 각 날짜 열의 columnIndex를 정확히 기록하세요
 
 2. **⏰ 시간 행 분석**:
@@ -132,7 +161,15 @@ ${JSON.stringify(ocrData, null, 2)}
    - **포지션**: 셀이 속한 열의 헤더에서 추출
 
 **📝 데이터 변환 규칙**:
-- 날짜: "MM월 DD일" → "YYYY-MM-DD" (예: "07월 07일" → "2025-07-07")
+- 날짜 변환 (모든 형식 지원):
+  * "07월 07일" → "2025-07-07"
+  * "7월 7일" → "2025-07-07"  
+  * "07/07" → "2025-07-07"
+  * "7/7" → "2025-07-07"
+  * "07월 11일" → "2025-07-11"
+  * "7월 11일" → "2025-07-11"
+  * "07/11" → "2025-07-11"
+  * "7/11" → "2025-07-11"
 - 시간: "HH:MM" 형식으로 통일
 - 포지션: 열 헤더의 텍스트 그대로 사용
 
@@ -154,6 +191,7 @@ ${JSON.stringify(ocrData, null, 2)}
 4. 종료 시간은 셀 내용의 시간을 사용하세요
 5. 시간 정보가 불분명하면 해당 일정을 제외하세요
 6. 찾을 수 없으면 빈 배열 []을 반환하세요
+7. **날짜 형식이 다르더라도 같은 날짜면 모두 포함하세요**
 
 **✅ 검증 체크리스트**:
 - [ ] 모든 ${targetName} 셀이 포함되었는가?
@@ -161,42 +199,44 @@ ${JSON.stringify(ocrData, null, 2)}
 - [ ] 종료 시간이 셀 내용과 일치하는가?
 - [ ] 날짜 형식이 YYYY-MM-DD인가?
 - [ ] 시간 형식이 HH:MM인가?
+- [ ] 7월 7일, 7월 8일, 7월 11일이 모두 포함되었는가?
+- [ ] 날짜 변환이 정확한가? (07/11 → 2025-07-11)
 `;
 
-      // Gemini API 호출
+    // Gemini API 호출
       console.log(`🤖 Gemini API 호출 시작...`);
       console.log(`   📝 프롬프트 길이: ${prompt.length} 문자`);
       console.log(`   🔧 사용된 파라미터: seed=${currentSeed}, temperature=${currentTemperature}, topP=${currentTopP}`);
       
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const responseText = response.text().trim();
-      
-      // 디버깅: Gemini 응답 로그 출력
-      console.log(`🤖 Gemini 응답:`);
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const responseText = response.text().trim();
+    
+    // 디버깅: Gemini 응답 로그 출력
+    console.log(`🤖 Gemini 응답:`);
       console.log(`   📏 응답 길이: ${responseText.length} 문자`);
       console.log(`   📄 응답 내용: ${responseText}`);
-      
-      // 코드 블록 제거 (```json ... ```)
-      let cleanResponse = responseText;
-      if (cleanResponse.startsWith('```json')) {
-        cleanResponse = cleanResponse.substring(7); // ```json 제거
+    
+    // 코드 블록 제거 (```json ... ```)
+    let cleanResponse = responseText;
+    if (cleanResponse.startsWith('```json')) {
+      cleanResponse = cleanResponse.substring(7); // ```json 제거
         console.log(`   🧹 JSON 코드 블록 제거됨`);
-      }
-      if (cleanResponse.endsWith('```')) {
-        cleanResponse = cleanResponse.substring(0, cleanResponse.length - 3); // ``` 제거
+    }
+    if (cleanResponse.endsWith('```')) {
+      cleanResponse = cleanResponse.substring(0, cleanResponse.length - 3); // ``` 제거
         console.log(`   🧹 코드 블록 끝 제거됨`);
-      }
-      cleanResponse = cleanResponse.trim();
+    }
+    cleanResponse = cleanResponse.trim();
       
       console.log(`   🧹 정리된 응답: ${cleanResponse}`);
-
-      // JSON 파싱
-      try {
-        const schedules = JSON.parse(cleanResponse);
-        
-        // 결과 검증
-        if (Array.isArray(schedules)) {
+    
+    // JSON 파싱
+    try {
+      const schedules = JSON.parse(cleanResponse);
+      
+      // 결과 검증
+      if (Array.isArray(schedules)) {
           console.log(`✅ Gemini 분석 완료 (시도 ${attempt}/${maxRetries}): ${schedules.length}개 일정 발견`);
           
           // 일정이 0개인 경우 재시도 고려
@@ -212,33 +252,33 @@ ${JSON.stringify(ocrData, null, 2)}
           }
           
           // 일정이 1개 이상인 경우 성공
-          for (const schedule of schedules) {
-            console.log(`   - ${schedule.date} ${schedule.start}-${schedule.end} (${schedule.position})`);
-          }
-          return schedules;
-        } else {
+        for (const schedule of schedules) {
+          console.log(`   - ${schedule.date} ${schedule.start}-${schedule.end} (${schedule.position})`);
+        }
+        return schedules;
+      } else {
           console.log(`❌ Gemini 응답이 리스트 형식이 아닙니다 (시도 ${attempt}/${maxRetries})`);
           if (attempt < maxRetries) {
             console.log(`🔄 재시도 예정... (${attempt + 1}/${maxRetries})`);
             lastError = new Error('Invalid response format');
             continue;
           }
-          return [];
-        }
-        
-      } catch (jsonError) {
+        return [];
+      }
+      
+    } catch (jsonError) {
         console.log(`❌ Gemini 응답 JSON 파싱 실패 (시도 ${attempt}/${maxRetries}): ${jsonError}`);
-        console.log(`응답 내용: ${cleanResponse}`);
+      console.log(`응답 내용: ${cleanResponse}`);
         
         if (attempt < maxRetries) {
           console.log(`🔄 재시도 예정... (${attempt + 1}/${maxRetries})`);
           lastError = jsonError;
           continue;
         }
-        return [];
-      }
-      
-    } catch (error) {
+      return [];
+    }
+    
+  } catch (error) {
       console.error(`❌ Gemini API 호출 실패 (시도 ${attempt}/${maxRetries}): ${error.message}`);
       lastError = error;
       
