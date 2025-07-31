@@ -31,7 +31,7 @@ exports.handleOcr = async (req, res) => {
   } = req.body;
   
   if (!req.file || !user_uid) {
-    // ✅ [1] 400 Bad Request 로깅
+    // ✅ 400 Bad Request 로깅
     logError({
       errorType: '400_BAD_REQUEST',
       location: 'ocrController.js:handleOcr',
@@ -116,10 +116,20 @@ exports.handleOcr = async (req, res) => {
       })))
       .select();
 
-    if (error) {
-      console.error('❌ Supabase 저장 실패:', error);
-      throw error;
-    }
+     if (error) {
+       // ✅ Supabase 오류 로깅
+       logError({
+         errorType: 'SUPABASE_INSERT_ERROR',
+         location: 'ocrController.js:handleOcr',
+         user_uid,
+         display_name,
+         statusCode: 500,
+         message: 'Supabase 저장 실패',
+         extra: error
+       });
+       throw error;
+     }
+
 
     console.log(`✅ ${events.length}개 일정 저장 완료`);
     
