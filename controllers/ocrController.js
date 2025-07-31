@@ -180,27 +180,44 @@ exports.handleOcr = async (req, res) => {
 async function callClovaOcr(imgBuf) {
   const axios = require('axios');
   const { v4: uuid } = require('uuid');
-  
-  const { data } = await axios.post(
-    process.env.CLOVA_URL,
-    {
-      version: 'V2',
-      requestId: uuid(),
-      timestamp: Date.now(),
-      enableTableDetection: true,
-      lang: 'ko',
-      images: [{ name: 'upload', format: 'jpg', data: imgBuf.toString('base64') }],
-    },
-    {
-      headers: {
-        'X-OCR-SECRET': process.env.CLOVA_SECRET,
-        'Content-Type': 'application/json',
+
+  try {
+    const { data } = await axios.post(
+      process.env.CLOVA_URL,
+      {
+        version: 'V2',
+        requestId: uuid(),
+        timestamp: Date.now(),
+        enableTableDetection: true,
+        lang: 'ko',
+        images: [{ name: 'upload', format: 'jpg', data: imgBuf.toString('base64') }],
       },
-      timeout: 30000
-    }
-  );
-  
-  return data;
+      {
+        headers: {
+          'X-OCR-SECRET': process.env.CLOVA_SECRET,
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000
+      }
+    );
+    return data;
+  } catch (err) {
+    const isTimeout = err.code === 'ECONNABORTED';
+    const isNetwork = ['ENOTFOUND', 'ECONNREFUSED'].includes(err.code);
+
+    // ✅ 네트워크 / 타임아웃 로깅
+    logError({
+      errorType: isTimeout ? 'TIMEOUT' : isNetwork ? 'NETWORK_ERROR' : 'CLOVA_OCR_ERROR',
+      location: 'ocrController.js:callClovaOcr',
+      user_uid,
+      display_name,
+      statusCode: 500,
+      message: err.message,
+      extra: { errorCode: err.code }
+    });
+
+    throw new Error(isTimeout ? 'OCR 요청 시간 초과' : 'OCR 네트워크 오류');
+  }
 }
 
 /**
