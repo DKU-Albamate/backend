@@ -154,13 +154,25 @@ exports.handleOcr = async (req, res) => {
     });
     
   } catch (err) {
-    console.error('❌ OCR 처리 중 오류:', err);
-    res.status(500).json({ 
-      error: 'OCR 처리 중 오류가 발생했습니다',
-      details: err.message 
-    });
-  }
-};
+        // ✅ 예외 발생 시 로깅
+        logError({
+          errorType: '500_INTERNAL',
+          location: 'ocrController.js:handleOcr',
+          user_uid,
+          display_name,
+          statusCode: 500,
+          message: 'OCR 처리 중 오류 발생',
+          extra: { errorMessage: err.message }
+        });
+
+        console.error('❌ OCR 처리 중 오류:', err);
+        res.status(500).json({
+          error: 'OCR 처리 중 오류가 발생했습니다',
+          details: err.message
+        });
+      }
+    };
+
 
 /**
  * CLOVA OCR API 호출 함수
