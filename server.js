@@ -9,8 +9,8 @@ const deleteAccountRouter = require('./routes/delete-account');
 const groupRoutes = require('./routes/groupRoutes');  // 그룹 라우트 추가
 const postRoutes = require('./routes/postRoutes');
 const taskRoutes = require('./routes/taskRoutes');  // 할 일 라우트 추가
-const llmNoticeRoutes = require('./routes/llmNoticeRoutes'); // gemini notice
-const llmMenuRoutes = require('./routes/llmMenuRoutes'); // 신메뉴 공지 라우터 추가
+const llmNoticeRoutes = require('./routes/llmNoticeRoutes'); // gemini notice(안내사항)
+const llmMenuRoutes = require('./routes/llmMenuRoutes'); // 신메뉴 공지 라우터 추가(신메뉴)
 
 // 미들웨어 설정
 app.use(cors());
