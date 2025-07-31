@@ -31,8 +31,23 @@ exports.handleOcr = async (req, res) => {
   } = req.body;
   
   if (!req.file || !user_uid) {
-    return res.status(400).json({ 
-      error: '필수 파라미터 누락', 
+    // ✅ [1] 400 Bad Request 로깅
+    logError({
+      errorType: '400_BAD_REQUEST',
+      location: 'ocrController.js:handleOcr',
+      user_uid,
+      display_name,
+      statusCode: 400,
+      message: '필수 파라미터 누락',
+      extra: {
+        hasFile: !!req.file,
+        user_uid,
+        display_name
+      }
+    });
+
+    return res.status(400).json({
+      error: '필수 파라미터 누락',
       required: ['photo', 'user_uid'],
       received: {
         hasFile: !!req.file,
