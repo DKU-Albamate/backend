@@ -11,6 +11,8 @@ const postRoutes = require('./routes/postRoutes');
 const taskRoutes = require('./routes/taskRoutes');  // 할 일 라우트 추가
 const llmNoticeRoutes = require('./routes/llmNoticeRoutes'); // gemini notice(안내사항)
 const llmMenuRoutes = require('./routes/llmMenuRoutes'); // 신메뉴 공지 라우터 추가(신메뉴)
+const llmSummaryRoutes = require('./routes/llmSummaryRoutes'); //  요약 라우터 추가
+
 
 // 미들웨어 설정
 app.use(cors());
@@ -27,6 +29,8 @@ app.use('/api/tasks', taskRoutes);  // 할 일 API 엔드포인트 추가
 app.use('/ocr', require('./routes/ocr'));
 app.use('/notice', llmNoticeRoutes);
 app.use('/notice', llmMenuRoutes); // 신메뉴 공지 라우터 연결
+app.use('/notice', llmSummaryRoutes); //  요약 라우터 연결
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
