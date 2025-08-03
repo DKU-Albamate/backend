@@ -48,7 +48,7 @@ const uploadImage = async (req, res) => {
 
 // 🔹 글 작성
 const createPost = async (req, res) => {
-  const { groupId, title, content, category, imageUrl, tags } = req.body;
+  const { groupId, title, content, category, imageUrl } = req.body;
   const userUid = req.user.uid;
 
   if (!ALLOWED_CATEGORIES.includes(category)) {
@@ -62,7 +62,6 @@ const createPost = async (req, res) => {
     content,
     category,
     image_url: imageUrl, // 이미지 URL 추가
-    tags,
   }).select().single();
 
   if (error) return res.status(400).json({ success: false, message: error.message });
@@ -85,7 +84,7 @@ const getPostsByGroup = async (req, res) => {
 // 🔹 글 수정
 const updatePost = async (req, res) => {
   const { postId } = req.params;
-  const { title, content, imageUrl, tags } = req.body;
+  const { title, content, imageUrl } = req.body;
   const userUid = req.user.uid;
 
   const { data: post, error: fetchError } = await supabase.from('board_posts')
@@ -109,7 +108,6 @@ const updatePost = async (req, res) => {
       title, 
       content, 
       image_url: imageUrl, // 이미지 URL 업데이트 추가
-      tags,
       updated_at: new Date() 
     })
     .eq('id', postId);
