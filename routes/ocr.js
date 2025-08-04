@@ -1,9 +1,11 @@
 const router = require('express').Router();
 const multer = require('multer')();
-const { handleOcr, healthCheck } = require('../controllers/ocrController');
+const { handleOcr,saveSchedule, healthCheck } = require('../controllers/ocrController');
 
 // OCR 스케줄 처리 (기본 - Gemini 사용 가능)
 router.post('/schedule', multer.single('photo'), handleOcr);
+// 스케줄 DB에 저장
+router.post('/save', saveSchedule);
 
 // Gemini 전용 OCR 스케줄 처리
 router.post('/schedule/gemini', multer.single('photo'), (req, res) => {
@@ -19,5 +21,7 @@ router.post('/schedule/traditional', multer.single('photo'), (req, res) => {
 
 // OCR 서비스 상태 확인
 router.get('/health', healthCheck);
+
+router.post('/save', saveSchedule);
 
 module.exports = router;

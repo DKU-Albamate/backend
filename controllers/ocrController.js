@@ -103,75 +103,43 @@ exports.handleOcr = async (req, res) => {
       });
     }
 
-    // 3) Supabase INSERT (source='ocr')
-    const { data, error } = await supabase
-      .from('appointments')
-      .insert(events.map(e => ({
-        user_uid,
-        title     : e.title || e.position || '근무',
-        start_time: `${e.date}T${e.start}:00+09`,
-        end_time  : `${e.date}T${e.end}:00+09`,
-        color     : null,
-        source    : use_gemini === 'true' ? 'ocr_gemini' : 'ocr'
-      })))
-      .select();
-
-     if (error) {
-       // ✅ Supabase 오류 로깅
-       logError({
-         errorType: 'SUPABASE_INSERT_ERROR',
-         location: 'ocrController.js:handleOcr',
-         user_uid,
-         display_name,
-         statusCode: 500,
-         message: 'Supabase 저장 실패',
-         extra: error
-       });
-       throw error;
-     }
-
-
-    console.log(`✅ ${events.length}개 일정 저장 완료`);
-    
-    // Flutter 앱에서 기대하는 형식으로 변환
+    // ✅ DB 저장 생략
     const formattedSchedules = events.map(e => ({
       date: e.date,
       start: e.start,
       end: e.end,
       title: e.title || e.position || '근무'
     }));
-    
-    res.status(201).json({
-      message: '일정이 성공적으로 저장되었습니다',
-      inserted: events.length,
+
+    res.status(200).json({
+      message: '일정 분석 완료',
       schedules: formattedSchedules,
-      savedData: data,
       analysis_method: use_gemini === 'true' ? 'gemini' : 'traditional',
       retry_info: use_gemini === 'true' ? {
         max_retries: parseInt(max_retries),
         retry_attempts: '재시도 과정은 서버 로그에서 확인 가능'
       } : null
     });
-    
-  } catch (err) {
-        // ✅ 예외 발생 시 로깅
-        logError({
-          errorType: '500_INTERNAL',
-          location: 'ocrController.js:handleOcr',
-          user_uid,
-          display_name,
-          statusCode: 500,
-          message: 'OCR 처리 중 오류 발생',
-          extra: { errorMessage: err.message }
-        });
 
-        console.error('❌ OCR 처리 중 오류:', err);
-        res.status(500).json({
-          error: 'OCR 처리 중 오류가 발생했습니다',
-          details: err.message
-        });
-      }
-    };
+  } catch (err) {
+    // ✅ 예외 발생 시 로깅
+    logError({
+      errorType: '500_INTERNAL',
+      location: 'ocrController.js:handleOcr',
+      user_uid,
+      display_name,
+      statusCode: 500,
+      message: 'OCR 처리 중 오류 발생',
+      extra: { errorMessage: err.message }
+    });
+
+    console.error('❌ OCR 처리 중 오류:', err);
+    res.status(500).json({
+      error: 'OCR 처리 중 오류가 발생했습니다',
+      details: err.message
+    });
+  }
+};
 
 
 /**
@@ -260,3 +228,63 @@ exports.healthCheck = async (req, res) => {
     });
   }
 };
+
+// DB에 일정 저장하는 부분
+exports.saveSchedule = async (req, res) => {
+  const { user_uid, schedules, use_gemini = 'false' } = req.body;
+
+  if (!user_uid || !Array.isArray(schedules)) {
+    return res.status(400).json({
+      error: 'user_uid 또는 schedules 누락'
+    });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('appointments')
+      .insert(schedules.map(e => ({
+        user_uid,
+        title     : e.title || e.position || '근무',
+        start_time: `${e.date}T${e.start}:00+09`,
+        end_time  : `${e.date}T${e.end}:00+09`,
+        color     : null,
+        source    : use_gemini === 'true' ? 'ocr_gemini' : 'ocr'
+      })))
+      .select();
+
+    if (error) {
+      logError({
+        errorType: 'SUPABASE_INSERT_ERROR',
+        location: 'ocrController.js:saveSchedule',
+        user_uid,
+        statusCode: 500,
+        message: 'Supabase 저장 실패',
+        extra: error
+      });
+      throw error;
+    }
+
+    res.status(201).json({
+      message: '일정이 성공적으로 저장되었습니다',
+      inserted: data.length,
+      savedData: data
+    });
+
+  } catch (err) {
+    logError({
+      errorType: '500_INTERNAL',
+      location: 'ocrController.js:saveSchedule',
+      user_uid,
+      statusCode: 500,
+      message: '일정 저장 중 오류 발생',
+      extra: { errorMessage: err.message }
+    });
+
+    res.status(500).json({
+      error: '일정 저장 중 오류가 발생했습니다',
+      details: err.message
+    });
+  }
+};
+
+
