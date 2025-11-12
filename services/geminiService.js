@@ -15,8 +15,16 @@ const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
  * @param {number} maxRetries - 최대 재시도 횟수 (기본값: 5)
  * @returns {Array} 근무일정 리스트
  */
-async function analyzeScheduleWithGemini(ocrData, targetName, year = 2025, seed = 42, temperature = 0.05, topP = 0.3, maxRetries = 5) {
+async function analyzeScheduleWithGemini(ocrData, targetName, year = 2025, seed = 42, temperature = 0.05, topP = 0.3, maxRetries = 5, debug = false) {
   let lastError = null;
+  // collect debug info optionally returned when debug=true
+  let debugInfo = {
+    ocrPreview: null,
+    geminiRaw: null,
+    geminiClean: null,
+    attempts: [],
+    finalError: null
+  };
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
   try {
@@ -132,6 +140,13 @@ async function analyzeScheduleWithGemini(ocrData, targetName, year = 2025, seed 
           if (targetCells.length > 0) {
             console.log(`   👤 직원 셀 상세: ${targetCells.join(', ')}`);
           }
+          // Fill debug OCR preview
+          debugInfo.ocrPreview = {
+            tablesCount: ocrData.images[0].tables?.length || 0,
+            sampleDateCells: dateCells.slice(0, 10),
+            sampleTargetCells: targetCells.slice(0, 10),
+            timeRows: timeRows || []
+          };
         } else {
           console.log('   ❌ 테이블 데이터 없음');
         }
@@ -267,6 +282,8 @@ ${JSON.stringify(ocrData, null, 2)}
     console.log(`🤖 Gemini 응답:`);
       console.log(`   📏 응답 길이: ${responseText.length} 문자`);
       console.log(`   📄 응답 내용: ${responseText}`);
+      // store raw gemini response for debug
+      debugInfo.geminiRaw = responseText;
     
     // 코드 블록 제거 (```json ... ```)
     let cleanResponse = responseText;
@@ -281,51 +298,60 @@ ${JSON.stringify(ocrData, null, 2)}
     cleanResponse = cleanResponse.trim();
       
       console.log(`   🧹 정리된 응답: ${cleanResponse}`);
+      debugInfo.geminiClean = cleanResponse;
     
     // JSON 파싱
     try {
       const schedules = JSON.parse(cleanResponse);
-      
+
       // 결과 검증
       if (Array.isArray(schedules)) {
           console.log(`✅ Gemini 분석 완료 (시도 ${attempt}/${maxRetries}): ${schedules.length}개 일정 발견`);
-          
+
           // 일정이 0개인 경우 재시도 고려
           if (schedules.length === 0) {
             if (attempt < maxRetries) {
               console.log(`⚠️ 일정이 0개입니다. 재시도 예정... (${attempt + 1}/${maxRetries})`);
               lastError = new Error('No schedules found');
+              debugInfo.attempts.push({ attempt, seed: currentSeed, temperature: currentTemperature, topP: currentTopP, found: 0 });
               continue;
             } else {
               console.log(`❌ 모든 시도 후에도 일정을 찾을 수 없습니다 (${maxRetries}회 시도)`);
+              if (debug) return { schedules: [], debug: debugInfo };
               return [];
             }
           }
-          
+
           // 일정이 1개 이상인 경우 성공
         for (const schedule of schedules) {
           console.log(`   - ${schedule.date} ${schedule.start}-${schedule.end} (${schedule.position})`);
         }
+        debugInfo.attempts.push({ attempt, seed: currentSeed, temperature: currentTemperature, topP: currentTopP, found: schedules.length });
+        if (debug) return { schedules, debug: debugInfo };
         return schedules;
       } else {
           console.log(`❌ Gemini 응답이 리스트 형식이 아닙니다 (시도 ${attempt}/${maxRetries})`);
           if (attempt < maxRetries) {
             console.log(`🔄 재시도 예정... (${attempt + 1}/${maxRetries})`);
             lastError = new Error('Invalid response format');
+            debugInfo.attempts.push({ attempt, seed: currentSeed, temperature: currentTemperature, topP: currentTopP, parseError: 'Invalid response format' });
             continue;
           }
+        if (debug) return { schedules: [], debug: debugInfo };
         return [];
       }
-      
+
     } catch (jsonError) {
         console.log(`❌ Gemini 응답 JSON 파싱 실패 (시도 ${attempt}/${maxRetries}): ${jsonError}`);
       console.log(`응답 내용: ${cleanResponse}`);
-        
+      debugInfo.attempts.push({ attempt, seed: currentSeed, temperature: currentTemperature, topP: currentTopP, parseError: jsonError.message });
+
         if (attempt < maxRetries) {
           console.log(`🔄 재시도 예정... (${attempt + 1}/${maxRetries})`);
           lastError = jsonError;
           continue;
         }
+      if (debug) return { schedules: [], debug: debugInfo };
       return [];
     }
     
@@ -348,7 +374,9 @@ ${JSON.stringify(ocrData, null, 2)}
   console.error(`❌ 모든 재시도 실패 (${maxRetries}회 시도)`);
   if (lastError) {
     console.error(`마지막 오류: ${lastError.message}`);
+    debugInfo.finalError = lastError.message;
   }
+  if (debug) return { schedules: [], debug: debugInfo };
   return [];
 }
 
