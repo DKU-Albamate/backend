@@ -1,4 +1,4 @@
-const supabase = require('../config/supabaseClient'); 
+const { supabase } = require('../config/supabaseClient');
 const { format } = require('date-fns');
 
 /**
