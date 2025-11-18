@@ -203,7 +203,7 @@ async function manageSubstituteRequestController(req, res) {
  * ⚠️ [인증/권한 제거] 요청 ID만으로 삭제를 시도합니다.
  */
 async function deleteSubstituteRequestController(req, res) {
-    const requestId = req.params.request_Id; // 삭제할 요청 ID
+    const requestId = req.params.requestId; // 삭제할 요청 ID
 
     if (!requestId) {
         return res.status(400).json({ 
