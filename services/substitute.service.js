@@ -142,10 +142,66 @@ async function acceptSubstituteRequest(requestId, substituteName) {
 
     return updatedData;
 }
+/**
+ * 사장님 최종 요청 관리 (승인/거절)
+ */
+async function manageSubstituteRequest(requestId, finalStatus) {
+    // 1. 요청의 현재 상태를 조회합니다.
+    const { data: request, error: fetchError } = await supabase
+        .from('substitute_requests')
+        .select('id, group_id, requester_name, substitute_name, shift_date, status')
+        .eq('id', requestId)
+        .single();
 
+    if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('요청 조회 오류:', fetchError);
+        throw new Error('데이터베이스 조회 중 예상치 못한 오류가 발생했습니다.');
+    }
+    if (!request) {
+        throw new Error(`대타 요청 ID ${requestId}를 찾을 수 없습니다.`);
+    }
+
+    // 2. 상태 및 대타 여부 검증
+    if (request.status !== 'IN_REVIEW') {
+        throw new Error(`요청 ID ${requestId}는 IN_REVIEW 상태가 아닙니다. 현재 상태: ${request.status}`);
+    }
+    if (!request.substitute_name) {
+        throw new Error(`요청 ID ${requestId}는 대타가 정해지지 않아 처리할 수 없습니다.`);
+    }
+
+    // 3. 상태 업데이트 데이터 준비
+    const updateData = {
+        status: finalStatus,
+    };
+    
+    if (finalStatus === 'APPROVED') {
+        updateData.approved_at = new Date().toISOString(); 
+    }
+    
+    // 4. 스케줄 업데이트 (승인 시에만)
+    if (finalStatus === 'APPROVED') {
+        await updateSchedulePost(request); 
+    }
+
+    // 5. substitute_requests 테이블 업데이트
+    const { data: updatedRequest, error: updateError } = await supabase
+        .from('substitute_requests')
+        .update(updateData)
+        .eq('id', requestId)
+        .select()
+        .single();
+
+    if (updateError) {
+        console.error('대타 요청 최종 업데이트 오류:', updateError);
+        throw new Error('대타 요청 최종 업데이트에 실패했습니다.');
+    }
+
+    return updatedRequest;
+}
 module.exports = {
     checkScheduleOverlap,
     createSubstituteRequest,
     getSubstituteRequests,
     acceptSubstituteRequest,
+    manageSubstituteRequest,
 };

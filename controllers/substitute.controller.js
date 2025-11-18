@@ -116,8 +116,58 @@ async function acceptSubstituteRequestController(req, res) {
         });
     }
 }
+/**
+ * PUT /api/substitute/requests/:request_id/manage: 사장님 요청 관리 (승인/거절)
+ */
+async function manageSubstituteRequestController(req, res) {
+    const requestId = req.params.request_id;
+    const { final_status } = req.body;
+
+    // 1. final_status 유효성 검사
+    if (!final_status || (final_status !== 'APPROVED' && final_status !== 'REJECTED')) {
+        return res.status(400).json({
+            success: false,
+            message: '최종 상태(final_status)는 APPROVED 또는 REJECTED여야 합니다.'
+        });
+    }
+
+    try {
+        const updatedRequest = await substituteService.manageSubstituteRequest(
+            requestId, 
+            final_status
+        );
+        
+        // 메시지 설정
+        const action = final_status === 'APPROVED' ? '승인' : '거절';
+
+        return res.status(200).json({
+            success: true,
+            message: `대타 요청 ID ${requestId}가 성공적으로 ${action} 처리되었습니다.`,
+            data: updatedRequest,
+        });
+
+    } catch (error) {
+        // 404 Not Found (요청 ID 없음, 상태 불일치 등) 에러 처리
+        if (error.message.includes('찾을 수 없') || 
+            error.message.includes('IN_REVIEW 상태가 아닙니다') ||
+            error.message.includes('대타가 정해지지 않았습니다') ||
+            error.message.includes('확정된 스케줄 포스트를 찾을 수 없습니다')) {
+            return res.status(404).json({
+                success: false,
+                message: error.message,
+            });
+        }
+        
+        console.error('대타 요청 관리 중 서버 오류 발생. 상세 메시지:', error.message);
+        return res.status(500).json({
+            success: false,
+            message: '대타 요청 관리 처리 중 서버 오류가 발생했습니다.',
+        });
+    }
+}
 module.exports = {
     createSubstituteRequestController,
     getSubstituteRequestsController,
     acceptSubstituteRequestController,
+    manageSubstituteRequestController,
 };
