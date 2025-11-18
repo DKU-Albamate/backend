@@ -281,7 +281,22 @@ async function manageSubstituteRequest(requestId, finalStatus) {
 
     return updatedRequest;
 }
+// 대타 요청 글 삭제
+async function deleteSubstituteRequest(requestId) {
+    // 1. Supabase Client를 사용하여 삭제 실행
+    const { error } = await supabase
+        .from('substitute_requests')
+        .delete()
+        .eq('id', requestId);
 
+    if (error) {
+        // 삭제 실패 시 에러 처리 (예: 해당 ID가 없는 경우 등)
+        throw new Error(`DB 삭제 실패: ${error.message}`);
+    }
+    
+    // 2. 삭제 성공 메시지 반환
+    return { message: '대타 요청이 성공적으로 삭제되었습니다.' };
+}
 module.exports = {
     checkScheduleOverlap,
     createSubstituteRequest,
@@ -289,4 +304,5 @@ module.exports = {
     getSubstituteRequestById,
     acceptSubstituteRequest,
     manageSubstituteRequest,
+    deleteSubstituteRequest,
 };

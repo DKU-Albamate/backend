@@ -198,10 +198,51 @@ async function manageSubstituteRequestController(req, res) {
         });
     }
 }
+/**
+ * DELETE /api/substitute/requests/:request_id: 대타 요청 삭제 컨트롤러
+ *  [프론트엔드 권한 위임] 프론트엔드에서 이미 작성자/사장님 권한을 확인했으므로, 
+ * 백엔드에서는 단순 삭제만 수행합니다. (요청 ID의 유효성은 서비스 계층에서 검사)
+ */
+async function deleteSubstituteRequestController(req, res) {
+    const requestId = req.params.request_id; // 삭제할 요청 ID
+
+    if (!requestId) {
+        return res.status(400).json({ 
+            success: false, 
+            message: '요청 ID가 URL에 포함되어야 합니다.' 
+        });
+    }
+
+    try {
+        // 1. 서비스 함수 호출: 요청 ID만 전달하여 삭제 실행
+        const result = await substituteService.deleteSubstituteRequest(requestId);
+
+        return res.status(200).json({
+            success: true,
+            message: result.message, // 예: "대타 요청이 성공적으로 삭제되었습니다."
+        });
+
+    } catch (error) {
+        // 404 Not Found (요청 ID 없음) 처리
+        if (error.message.includes('찾을 수 없')) {
+            return res.status(404).json({
+                success: false,
+                message: error.message,
+            });
+        }
+        
+        console.error('대타 요청 삭제 중 서버 오류 발생. 상세 메시지:', error.message);
+        return res.status(500).json({
+            success: false,
+            message: '대타 요청 삭제 처리 중 서버 오류가 발생했습니다.',
+        });
+    }
+}
 module.exports = {
     createSubstituteRequestController,
     getSubstituteRequestsController,
     getSubstituteRequestDetail,
     acceptSubstituteRequestController,
     manageSubstituteRequestController,
+    deleteSubstituteRequestController,
 };

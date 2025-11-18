@@ -36,4 +36,10 @@ router.put(
     // authenticate, //  [필수] 관리자 인증 로직 필요
     substituteController.manageSubstituteRequestController
 );
+// DELETE /api/substitute/requests/:request_id
+router.delete(
+  '/requests/:requestId',
+  authenticate, // 사용자 인증 미들웨어
+  requestsController.deleteSubstituteRequest // 삭제 컨트롤러 함수
+);
 module.exports = router;
