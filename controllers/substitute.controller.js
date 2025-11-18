@@ -200,8 +200,7 @@ async function manageSubstituteRequestController(req, res) {
 }
 /**
  * DELETE /api/substitute/requests/:request_id: 대타 요청 삭제 컨트롤러
- *  [프론트엔드 권한 위임] 프론트엔드에서 이미 작성자/사장님 권한을 확인했으므로, 
- * 백엔드에서는 단순 삭제만 수행합니다. (요청 ID의 유효성은 서비스 계층에서 검사)
+ * ⚠️ [인증/권한 제거] 요청 ID만으로 삭제를 시도합니다.
  */
 async function deleteSubstituteRequestController(req, res) {
     const requestId = req.params.request_id; // 삭제할 요청 ID
@@ -215,11 +214,12 @@ async function deleteSubstituteRequestController(req, res) {
 
     try {
         // 1. 서비스 함수 호출: 요청 ID만 전달하여 삭제 실행
+        // 💡 주의: 서비스 계층에서 DB에 요청하는 로직만 수행합니다.
         const result = await substituteService.deleteSubstituteRequest(requestId);
 
         return res.status(200).json({
             success: true,
-            message: result.message, // 예: "대타 요청이 성공적으로 삭제되었습니다."
+            message: result.message,
         });
 
     } catch (error) {
