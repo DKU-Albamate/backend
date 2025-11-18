@@ -74,7 +74,40 @@ async function getSubstituteRequestsController(req, res) {
     }
 }
 /**
- * 💡 [신규] 대타 요청 수락 컨트롤러 (PUT /api/substitute/requests/:request_id/accept)
+ *  GET /api/substitute/requests/:request_id: 특정 대타 요청의 상세 정보를 조회합니다.
+ */
+async function getSubstituteRequestDetail(req, res) {
+    const requestId = req.params.request_id; 
+
+    if (!requestId) {
+        return res.status(400).json({ 
+            success: false, 
+            message: '요청 ID가 URL에 포함되어야 합니다.' 
+        });
+    }
+
+    try {
+        const request = await substituteService.getSubstituteRequestById(requestId);
+        return res.status(200).json({ success: true, data: request });
+
+    } catch (error) {
+        // 404 Not Found (요청 ID 없음) 에러 처리
+        if (error.message.includes('찾을 수 없습니다')) {
+            return res.status(404).json({
+                success: false,
+                message: error.message,
+            });
+        }
+
+        console.error('대타 요청 상세 조회 중 오류 발생:', error.message);
+        return res.status(500).json({ 
+            success: false, 
+            message: error.message || '서버에서 요청 상세 정보를 조회하는 데 실패했습니다.' 
+        });
+    }
+}
+/**
+ *  대타 요청 수락 컨트롤러 (PUT /api/substitute/requests/:request_id/accept)
  * 알바생이 특정 대타 요청을 수락하고, 상태를 'IN_REVIEW'로 변경합니다.
  */
 async function acceptSubstituteRequestController(req, res) {
@@ -168,6 +201,7 @@ async function manageSubstituteRequestController(req, res) {
 module.exports = {
     createSubstituteRequestController,
     getSubstituteRequestsController,
+    getSubstituteRequestDetail,
     acceptSubstituteRequestController,
     manageSubstituteRequestController,
 };

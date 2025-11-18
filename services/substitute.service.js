@@ -156,6 +156,31 @@ async function getSubstituteRequests(group_id) { // 💡 statusFilter 매개변�
     return requests;
 }
 /**
+ * 💡 [추가] 특정 ID의 대타 요청 상세 정보를 조회합니다.
+ */
+async function getSubstituteRequestById(requestId) {
+    if (!requestId) {
+        throw new Error("요청 ID는 필수입니다.");
+    }
+    
+    const { data: request, error } = await supabase
+        .from('substitute_requests')
+        .select('*') 
+        .eq('id', requestId)
+        .single(); 
+
+    if (error && error.code !== 'PGRST116') { 
+        console.error('개별 대타 요청 조회 오류:', error);
+        throw new Error('대타 요청 상세 정보 조회에 실패했습니다.');
+    }
+    
+    if (!request) {
+        throw new Error(`대타 요청 ID ${requestId}를 찾을 수 없습니다.`);
+    }
+
+    return request;
+}
+/**
  *  대타 요청을 수락하고 상태를 'IN_REVIEW'로 업데이트합니다.
  */
 async function acceptSubstituteRequest(requestId, substituteName) {
@@ -256,10 +281,12 @@ async function manageSubstituteRequest(requestId, finalStatus) {
 
     return updatedRequest;
 }
+
 module.exports = {
     checkScheduleOverlap,
     createSubstituteRequest,
     getSubstituteRequests,
+    getSubstituteRequestById,
     acceptSubstituteRequest,
     manageSubstituteRequest,
 };

@@ -4,6 +4,13 @@ const substituteController = require('../controllers/substitute.controller');
 const { validateCreateSubstituteRequest } = require('../validators/substitute.validator');
 // const { authenticate } = require('../middlewares/auth'); // 인증 미들웨어 (필요 시 주석 해제)
 
+//  개별 요청 상세 조회 (GET /api/substitute/requests/:request_id)
+// 전체 요청 조회보다 위에 위치해야 URL 파라미터를 올바르게 인식합니다.
+router.get(
+    '/requests/:request_id', 
+    // authenticate, 
+    substituteController.getSubstituteRequestDetail
+);
 // POST /api/substitute/requests: 새 대타 요청 생성
 router.post(
     '/requests',
@@ -11,6 +18,7 @@ router.post(
     validateCreateSubstituteRequest, // 요청 본문 유효성 검사
     substituteController.createSubstituteRequestController
 );
+
 //  GET /api/substitute/requests: 대타 요청 리스트 조회 (group_id로 필터링)
 router.get(
     '/requests',
