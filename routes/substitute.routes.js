@@ -17,4 +17,9 @@ router.get(
     // authenticate, // 💡 [선택] 로그인 사용자 확인
     substituteController.getSubstituteRequestsController
 );
+//  PUT /api/substitute/requests/:request_id/accept: 대타 요청 수락 라우트
+router.put(
+    '/requests/:request_id/accept', 
+    substituteController.acceptSubstituteRequestController // 이 컨트롤러를 실행합니다.
+);
 module.exports = router;
