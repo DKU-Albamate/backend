@@ -1,26 +1,28 @@
 const substituteService = require('../services/substitute.service');
 
 async function createSubstituteRequestController(req, res) {
-    const requestData = req.body;
+    const { group_id, requester_name, shift_date, start_time, end_time, reason } = req.body;
     
+    // 서비스 함수에 전달할 데이터
+    const requestData = { group_id, requester_name, shift_date, start_time, end_time, reason };
 
     try {
-        // 1. 근무 스케줄 확인
+        // 1. 근무 스케줄 확인 (이름 기반)
         const isScheduled = await substituteService.checkScheduleOverlap(requestData);
         
         if (!isScheduled) {
             return res.status(403).json({
                 success: false,
-                message: '요청한 날짜에 확정된 근무가 배정되어 있지 않습니다.',
+                message: `요청자(${requester_name})님은 요청한 날짜에 확정된 근무가 배정되어 있지 않습니다.`,
             });
         }
 
-        // 2. 대타 요청 저장
+        // 2. 대타 요청 저장 
         const newRequest = await substituteService.createSubstituteRequest(requestData);
 
         return res.status(201).json({
             success: true,
-            message: '대타 요청이 성공적으로 등록되었습니다.',
+            message: `대타 요청(${requester_name}님)이 성공적으로 등록되었습니다.`,
             data: newRequest,
         });
 

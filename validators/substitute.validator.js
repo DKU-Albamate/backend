@@ -5,9 +5,9 @@ const createSubstituteRequestSchema = Joi.object({
         'any.required': 'Group ID는 필수입니다.',
         'string.empty': 'Group ID를 입력해 주세요.',
     }),
-    requester_uid: Joi.string().required().messages({
-        'any.required': '요청자 UID는 필수입니다.',
-        'string.empty': '요청자 UID를 입력해 주세요.',
+    requester_name: Joi.string().required().messages({
+        'any.required': '요청자 이름은 필수입니다.',
+        'string.empty': '요청자 이름을 입력해 주세요.',
     }),
     shift_date: Joi.date().iso().required().messages({
         'any.required': '근무 날짜는 필수입니다.',

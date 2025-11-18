@@ -1,14 +1,14 @@
-const supabase = require('../config/supabaseClient'); // Supabase 클라이언트 경로 확인 필요
+const supabase = require('../config/supabaseClient'); 
 const { format } = require('date-fns');
 
 /**
  * 💡 요청자가 요청한 날짜에 'confirmed' 상태의 근무가 배정되어 있는지 확인합니다.
- * schedule_posts 테이블의 assignments JSONB 필드에서 해당 날짜에 requester_uid가 포함되어 있는지 확인합니다.
+ * assignments JSONB 필드의 "이름" 배열과 요청자의 "이름"을 비교합니다.
  */
-async function checkScheduleOverlap({ group_id, requester_uid, shift_date }) {
+async function checkScheduleOverlap({ group_id, requester_name, shift_date }) {
     const requestedDate = format(new Date(shift_date), 'yyyy-MM-dd');
     const year = new Date(requestedDate).getFullYear();
-    const month = new Date(requestedDate).getMonth() + 1; // JS month는 0부터 시작 (1월=1)
+    const month = new Date(requestedDate).getMonth() + 1;
 
     // 1. 해당 월의 'confirmed' 상태의 schedule_posts를 조회
     const { data: schedulePosts, error } = await supabase
@@ -17,36 +17,32 @@ async function checkScheduleOverlap({ group_id, requester_uid, shift_date }) {
         .eq('group_id', group_id)
         .eq('year', year)
         .eq('month', month)
-        .eq('status', 'confirmed') // 💡 'status'가 'confirmed'인 포스트만 조회
+        .eq('status', 'confirmed') 
         .single(); 
 
-    if (error && error.code !== 'PGRST116') { // PGRST116은 데이터 없음
+    if (error && error.code !== 'PGRST116') {
         console.error('스케줄 포스트 조회 오류:', error);
-        // Supabase 에러가 발생했지만 데이터베이스 문제가 아니라면 throw 대신 false 반환 고려
         if (error.code === 'PGRST116') {
-             return false; // 해당 월에 확정된 스케줄이 없음
+             return false; 
         }
         throw new Error('스케줄 확인 중 데이터베이스 오류 발생');
     }
 
     if (!schedulePosts || !schedulePosts.assignments) {
-        return false; // 'confirmed' 상태의 스케줄 포스트가 없거나 assignments 필드가 비어있음
+        return false; 
     }
 
     const assignments = schedulePosts.assignments;
 
-    // 2. assignments JSONB 필드에서 요청 날짜에 해당하는 근무를 조회합니다.
-    const dailyAssignments = assignments[requestedDate];
+    // 2. assignments JSONB 필드에서 요청 날짜에 해당하는 근무자 리스트(이름 배열)를 조회합니다.
+    const dailyAssignments = assignments[requestedDate]; // 예: ["Kim", "Lee"]
 
-    if (!dailyAssignments) {
-        return false; // 해당 날짜에 배정된 근무가 없음
+    if (!dailyAssignments || !Array.isArray(dailyAssignments)) {
+        return false; // 해당 날짜에 배정된 근무가 없거나 형식이 잘못됨
     }
 
-    // 3. 해당 날짜의 근무 중에서 요청자 UID가 포함되어 있는지 확인합니다.
-    const isScheduled = dailyAssignments.some(assignment => {
-        // 근무가 요청자에게 배정되었는지 확인
-        return assignment.owner_uid === requester_uid;
-    });
+    // 3. 해당 날짜의 근무자 리스트에 요청자의 이름이 포함되어 있는지 확인합니다.
+    const isScheduled = dailyAssignments.includes(requester_name);
 
     return isScheduled;
 }
@@ -54,18 +50,20 @@ async function checkScheduleOverlap({ group_id, requester_uid, shift_date }) {
 
 /**
  * 새 대타 요청을 substitute_requests 테이블에 저장합니다.
+ * 💡 requester_uid 필드에 requester_name을 저장합니다.
  */
 async function createSubstituteRequest(requestData) {
     const { data, error } = await supabase
         .from('substitute_requests')
         .insert({
             group_id: requestData.group_id,
-            requester_uid: requestData.requester_uid,
+            // 💡 [수정] requester_uid 필드에 요청받은 requester_name을 저장
+            requester_uid: requestData.requester_name, 
             shift_date: requestData.shift_date,
             start_time: requestData.start_time,
             end_time: requestData.end_time,
             reason: requestData.reason,
-            status: 'PENDING', // 초기 상태는 항상 PENDING
+            status: 'PENDING',
         })
         .select()
         .single();
