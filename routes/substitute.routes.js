@@ -11,5 +11,10 @@ router.post(
     validateCreateSubstituteRequest, // 요청 본문 유효성 검사
     substituteController.createSubstituteRequestController
 );
-
+//  GET /api/substitute/requests: 대타 요청 리스트 조회 (group_id로 필터링)
+router.get(
+    '/requests',
+    // authenticate, // 💡 [선택] 로그인 사용자 확인
+    substituteController.getSubstituteRequestsController
+);
 module.exports = router;

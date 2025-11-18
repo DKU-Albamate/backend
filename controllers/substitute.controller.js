@@ -39,7 +39,41 @@ async function createSubstituteRequestController(req, res) {
         });
     }
 }
+/**
+ * 대타 요청 리스트 조회 컨트롤러 (GET /api/substitute/requests)
+ * 💡 [수정] group_id에 해당하는 모든 상태의 요청을 조회합니다.
+ */
+async function getSubstituteRequestsController(req, res) {
+    // 쿼리 파라미터에서 group_id만 추출
+    const { group_id } = req.query; 
 
+    if (!group_id) {
+        return res.status(400).json({
+            success: false,
+            message: 'Group ID (group_id) 쿼리 파라미터는 필수입니다.'
+        });
+    }
+
+    try {
+        // 💡 [수정] 서비스 함수에 group_id만 전달합니다.
+        const requests = await substituteService.getSubstituteRequests(group_id);
+
+        return res.status(200).json({
+            success: true,
+            message: `Group ID ${group_id}의 모든 대타 요청 ${requests.length}건을 조회했습니다.`,
+            data: requests,
+        });
+
+    } catch (error) {
+        console.error('대타 요청 리스트 조회 중 서버 오류 발생. 상세 메시지:', error.message);
+        console.error('스택 트레이스:', error.stack);
+        return res.status(500).json({
+            success: false,
+            message: '대타 요청 리스트 조회 중 서버 오류가 발생했습니다.',
+        });
+    }
+}
 module.exports = {
     createSubstituteRequestController,
+    getSubstituteRequestsController,
 };

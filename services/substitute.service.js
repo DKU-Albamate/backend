@@ -75,8 +75,32 @@ async function createSubstituteRequest(requestData) {
 
     return data;
 }
+/**
+ *  [수정] 특정 그룹의 모든 상태 대타 요청 리스트를 조회합니다.
+ */
+async function getSubstituteRequests(group_id) { // 💡 statusFilter 매개변수 제거
+    if (!group_id) {
+        throw new Error("Group ID는 필수입니다.");
+    }
+    
+    // group_id만 필터링하여 모든 상태의 요청을 조회합니다.
+    const { data: requests, error } = await supabase
+        .from('substitute_requests')
+        .select('*') 
+        .eq('group_id', group_id)
+        .order('shift_date', { ascending: true }); // 날짜 순으로 정렬
+
+    if (error) {
+        console.error('대타 요청 조회 오류:', error);
+        throw new Error('대타 요청 리스트 조회에 실패했습니다.');
+    }
+
+    return requests;
+}
+
 
 module.exports = {
     checkScheduleOverlap,
     createSubstituteRequest,
+    getSubstituteRequests,
 };
