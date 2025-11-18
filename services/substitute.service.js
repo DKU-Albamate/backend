@@ -2,6 +2,64 @@ const { supabase } = require('../config/supabaseClient');
 const { format } = require('date-fns');
 
 /**
+ * 승인 시, 스케줄 포스트(schedule_posts)를 업데이트하여 요청자를 제거하고 대타를 추가합니다.
+ */
+async function updateSchedulePost(requestData) {
+    const { group_id, requester_name, substitute_name, shift_date } = requestData;
+
+    const requestedDate = format(new Date(shift_date), 'yyyy-MM-dd');
+    const year = new Date(requestedDate).getFullYear();
+    const month = new Date(requestedDate).getMonth() + 1;
+
+    // 1. 해당 월의 'confirmed' 상태의 schedule_posts를 조회합니다.
+    const { data: schedulePost, error: fetchError } = await supabase
+        .from('schedule_posts')
+        .select('id, assignments')
+        .eq('group_id', group_id)
+        .eq('year', year)
+        .eq('month', month)
+        .eq('status', 'confirmed') 
+        .single(); 
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('스케줄 포스트 조회 오류:', fetchError);
+        throw new Error('스케줄 포스트 조회 중 데이터베이스 오류 발생');
+    }
+
+    if (!schedulePost) {
+        throw new Error('대타 요청 날짜에 해당하는 확정된 스케줄 포스트를 찾을 수 없습니다.');
+    }
+    
+    // 2. assignments JSONB 필드 복사 및 수정
+    const newAssignments = { ...schedulePost.assignments };
+    let assignmentsToday = newAssignments[requestedDate] || [];
+
+    // 요청자(requester_name) 제거
+    assignmentsToday = assignmentsToday.filter(name => name !== requester_name);
+
+    // 대타 알바생(substitute_name) 추가 (중복 방지)
+    if (!assignmentsToday.includes(substitute_name)) {
+        assignmentsToday.push(substitute_name);
+    }
+
+    newAssignments[requestedDate] = assignmentsToday;
+
+    // 3. schedule_posts 테이블 업데이트
+    const { data: updatedPost, error: updateError } = await supabase
+        .from('schedule_posts')
+        .update({ assignments: newAssignments })
+        .eq('id', schedulePost.id)
+        .select()
+        .single();
+
+    if (updateError) {
+        console.error('스케줄 포스트 업데이트 오류:', updateError);
+        throw new Error('스케줄 포스트 업데이트에 실패했습니다.');
+    }
+
+    return updatedPost;
+}
+/**
  *  요청자가 요청한 날짜에 'confirmed' 상태의 근무가 배정되어 있는지 확인합니다.
  * assignments JSONB 필드의 "이름" 배열과 요청자의 "이름"을 비교합니다.
  */
