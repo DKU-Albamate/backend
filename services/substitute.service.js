@@ -57,8 +57,8 @@ async function createSubstituteRequest(requestData) {
         .from('substitute_requests')
         .insert({
             group_id: requestData.group_id,
-            // 💡 [수정] requester_uid 필드에 요청받은 requester_name을 저장
-            requester_uid: requestData.requester_name, 
+            
+            requester_name: requestData.requester_name, 
             shift_date: requestData.shift_date,
             start_time: requestData.start_time,
             end_time: requestData.end_time,
