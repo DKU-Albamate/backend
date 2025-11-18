@@ -28,7 +28,7 @@ async function createSubstituteRequestController(req, res) {
         });
 
     } catch (error) {
-        // 💡 [핵심] 서버 오류 발생 시, 실제 에러 메시지와 스택 트레이스를 콘솔에 자세히 출력합니다.
+        //  [핵심] 서버 오류 발생 시, 실제 에러 메시지와 스택 트레이스를 콘솔에 자세히 출력합니다.
         console.error('대타 요청 생성 중 서버 오류 발생. 상세 메시지:', error.message); 
         console.error('스택 트레이스:', error.stack); 
 
@@ -41,7 +41,7 @@ async function createSubstituteRequestController(req, res) {
 }
 /**
  * 대타 요청 리스트 조회 컨트롤러 (GET /api/substitute/requests)
- * 💡 [수정] group_id에 해당하는 모든 상태의 요청을 조회합니다.
+ *  [수정] group_id에 해당하는 모든 상태의 요청을 조회합니다.
  */
 async function getSubstituteRequestsController(req, res) {
     // 쿼리 파라미터에서 group_id만 추출
@@ -55,7 +55,7 @@ async function getSubstituteRequestsController(req, res) {
     }
 
     try {
-        // 💡 [수정] 서비스 함수에 group_id만 전달합니다.
+        //  [수정] 서비스 함수에 group_id만 전달합니다.
         const requests = await substituteService.getSubstituteRequests(group_id);
 
         return res.status(200).json({
@@ -73,7 +73,51 @@ async function getSubstituteRequestsController(req, res) {
         });
     }
 }
+/**
+ * 💡 [신규] 대타 요청 수락 컨트롤러 (PUT /api/substitute/requests/:request_id/accept)
+ * 알바생이 특정 대타 요청을 수락하고, 상태를 'IN_REVIEW'로 변경합니다.
+ */
+async function acceptSubstituteRequestController(req, res) {
+    const requestId = req.params.request_id; // URL 경로에서 요청 ID 추출
+    const { substitute_name } = req.body; // 요청 본문에서 수락 알바생 이름 추출
+
+    if (!substitute_name) {
+        return res.status(400).json({
+            success: false,
+            message: '대타를 수락하는 알바생의 이름(substitute_name)은 필수입니다.'
+        });
+    }
+
+    try {
+        const updatedRequest = await substituteService.acceptSubstituteRequest(
+            requestId, 
+            substitute_name
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: `${substitute_name}님이 대타 요청을 성공적으로 수락했습니다. 관리자 승인을 기다려주세요.`,
+            data: updatedRequest,
+        });
+
+    } catch (error) {
+        // 404 Not Found (요청 ID 없음, 이미 처리됨) 에러 처리
+        if (error.message.includes('찾을 수 없거나 이미 처리')) {
+            return res.status(404).json({
+                success: false,
+                message: error.message,
+            });
+        }
+        
+        console.error('대타 요청 수락 중 서버 오류 발생. 상세 메시지:', error.message);
+        return res.status(500).json({
+            success: false,
+            message: '대타 요청 수락 처리 중 서버 오류가 발생했습니다.',
+        });
+    }
+}
 module.exports = {
     createSubstituteRequestController,
     getSubstituteRequestsController,
+    acceptSubstituteRequestController,
 };

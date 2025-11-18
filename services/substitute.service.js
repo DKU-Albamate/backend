@@ -2,7 +2,7 @@ const { supabase } = require('../config/supabaseClient');
 const { format } = require('date-fns');
 
 /**
- * 💡 요청자가 요청한 날짜에 'confirmed' 상태의 근무가 배정되어 있는지 확인합니다.
+ *  요청자가 요청한 날짜에 'confirmed' 상태의 근무가 배정되어 있는지 확인합니다.
  * assignments JSONB 필드의 "이름" 배열과 요청자의 "이름"을 비교합니다.
  */
 async function checkScheduleOverlap({ group_id, requester_name, shift_date }) {
@@ -50,7 +50,7 @@ async function checkScheduleOverlap({ group_id, requester_name, shift_date }) {
 
 /**
  * 새 대타 요청을 substitute_requests 테이블에 저장합니다.
- * 💡 requester_uid 필드에 requester_name을 저장합니다.
+ *  requester_uid 필드에 requester_name을 저장합니다.
  */
 async function createSubstituteRequest(requestData) {
     const { data, error } = await supabase
@@ -76,7 +76,7 @@ async function createSubstituteRequest(requestData) {
     return data;
 }
 /**
- *  [수정] 특정 그룹의 모든 상태 대타 요청 리스트를 조회합니다.
+ *  특정 그룹의 모든 상태 대타 요청 리스트를 조회합니다.
  */
 async function getSubstituteRequests(group_id) { // 💡 statusFilter 매개변수 제거
     if (!group_id) {
@@ -97,10 +97,55 @@ async function getSubstituteRequests(group_id) { // 💡 statusFilter 매개변�
 
     return requests;
 }
+/**
+ *  대타 요청을 수락하고 상태를 'IN_REVIEW'로 업데이트합니다.
+ */
+async function acceptSubstituteRequest(requestId, substituteName) {
+    // 1. 요청의 현재 상태를 확인합니다. (PENDING 상태가 아니면 수락 불가)
+    const { data: currentRequest, error: fetchError } = await supabase
+        .from('substitute_requests')
+        .select('id, status, substitute_name')
+        .eq('id', requestId)
+        .single();
 
+    if (fetchError || !currentRequest) {
+        console.error('요청 조회 오류:', fetchError);
+        // Supabase에서 데이터가 0개일 때의 오류 코드(PGRST116)를 확인하여 처리하는 것이 좋지만,
+        // 현재는 일반적인 오류 메시지를 사용합니다.
+        throw new Error('요청 ID를 찾을 수 없거나 데이터베이스 오류가 발생했습니다.');
+    }
+
+    // 2. 이미 처리되었거나 대타가 구해졌는지 확인합니다.
+    if (currentRequest.status !== 'PENDING' || currentRequest.substitute_name !== null) {
+        const statusText = currentRequest.substitute_name 
+            ? `이미 ${currentRequest.substitute_name}님이 수락 대기 중`
+            : `이미 ${currentRequest.status} 상태로 처리 완료됨`;
+        
+        throw new Error(`대타 요청이 이미 처리되었거나 수락할 수 없는 상태입니다: ${statusText}`);
+    }
+
+    // 3. 상태 업데이트 및 대타 이름 기록 (IN_REVIEW = 대타가 구해져 사장님 승인 대기 중)
+    const { data: updatedData, error: updateError } = await supabase
+        .from('substitute_requests')
+        .update({ 
+            substitute_name: substituteName, 
+            status: 'IN_REVIEW',
+        })
+        .eq('id', requestId)
+        .select()
+        .single();
+
+    if (updateError) {
+        console.error('대타 요청 수락 업데이트 오류:', updateError);
+        throw new Error('대타 요청 수락 업데이트에 실패했습니다.');
+    }
+
+    return updatedData;
+}
 
 module.exports = {
     checkScheduleOverlap,
     createSubstituteRequest,
     getSubstituteRequests,
+    acceptSubstituteRequest,
 };
