@@ -297,6 +297,41 @@ async function deleteSubstituteRequest(requestId) {
     // 2. 삭제 성공 메시지 반환
     return { message: '대타 요청이 성공적으로 삭제되었습니다.' };
 }
+/**
+ * 대타 요청 글 수정
+ * @param {string} requestId - 수정할 요청의 고유 ID
+ * @param {object} updateData - 수정할 데이터 (예: { shift_date: '2025-11-20', reason: '새로운 이유' })
+ * @returns {object} - 수정된 요청 데이터
+ */
+async function updateSubstituteRequest(requestId, updateData) {
+    // 💡 필수 데이터 확인 (컨트롤러에서 대부분 처리하지만, 서비스에서도 한 번 더 확인)
+    if (!requestId || Object.keys(updateData).length === 0) {
+        // 데이터가 없으면 컨트롤러로 에러 반환
+        throw new Error('요청 ID 또는 수정 데이터가 누락되었습니다.'); 
+    }
+    
+    // 1. Supabase Client를 사용하여 갱신 실행
+    const { data: updatedData, error } = await supabase
+        .from('substitute_requests')
+        .update(updateData) // 전달받은 updateData로 갱신
+        .eq('id', requestId) // 해당 ID를 가진 요청만 선택
+        .select() // 갱신된 데이터를 반환하도록 요청
+        .single(); // 결과가 하나만 있기를 기대
+
+    if (error) {
+        // DB 갱신 중 발생한 오류 처리
+        console.error('Supabase DB 갱신 오류:', error);
+        throw new Error(`DB 수정 실패: ${error.message}`); 
+    }
+
+    // 2. ID는 유효했으나 데이터가 업데이트되지 않은 경우 (주로 ID를 못 찾았을 때)
+    if (!updatedData) {
+        throw new Error('해당 ID의 대타 요청을 찾을 수 없거나 수정에 실패했습니다.');
+    }
+    
+    // 3. 수정된 데이터 반환 (컨트롤러로 전달)
+    return updatedData;
+}
 module.exports = {
     checkScheduleOverlap,
     createSubstituteRequest,
@@ -305,4 +340,5 @@ module.exports = {
     acceptSubstituteRequest,
     manageSubstituteRequest,
     deleteSubstituteRequest,
+    updateSubstituteRequest,
 };
