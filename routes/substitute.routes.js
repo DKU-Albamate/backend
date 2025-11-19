@@ -42,10 +42,5 @@ router.delete(
   //authenticate, // 사용자 인증 미들웨어
   substituteController.deleteSubstituteRequestController // 삭제 컨트롤러 함수
 );
-// --- 대타 요청 수정 라우트 (PUT) ---
-router.put(
-  '/requests/:requestId', // 경로 파라미터 이름: 'requestId'
-  // authenticate 미들웨어는 제거됨
-  requestsController.updateSubstituteRequestController 
-);
+
 module.exports = router;

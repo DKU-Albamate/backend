@@ -238,76 +238,7 @@ async function deleteSubstituteRequestController(req, res) {
         });
     }
 }
-// --- 대타 요청 수정 컨트롤러 (PUT) ---
-/**
- * PUT /api/substitute/requests/:requestId: 대타 요청 수정 컨트롤러
- */
-async function updateSubstituteRequestController(req, res) {
-    const requestId = req.params.requestId; 
-    
-    // 수정 가능한 필드만 요청 본문에서 추출
-    const { 
-        shift_date, 
-        start_time, 
-        end_time, 
-        reason 
-    } = req.body; 
 
-    const updateData = {};
-    if (shift_date !== undefined) updateData.shift_date = shift_date;
-    if (start_time !== undefined) updateData.start_time = start_time;
-    if (end_time !== undefined) updateData.end_time = end_time;
-    if (reason !== undefined) updateData.reason = reason;
-
-    // 수정 시, 상태를 PENDING으로 강제 변경하고 수락/승인 정보를 초기화
-    updateData.status = 'PENDING';
-    updateData.substitute_name = null;
-    updateData.approved_at = null;
-
-
-    if (!requestId) {
-        return res.status(400).json({ 
-            success: false, 
-            message: '요청 ID가 URL에 포함되어야 합니다.' 
-        });
-    }
-    
-    // 필수 수정 내용 검증 (status, substitute_name, approved_at은 항상 포함되므로 4개 미만이면 실제 내용 없음)
-    if (Object.keys(updateData).length <= 3) {
-         return res.status(400).json({
-             success: false,
-             message: '수정할 내용이 요청 본문에 포함되어야 합니다.'
-         });
-    }
-
-
-    try {
-        const updatedRequest = await substituteService.updateSubstituteRequest(
-            requestId, 
-            updateData
-        );
-
-        return res.status(200).json({
-            success: true,
-            message: `대타 요청 ID ${requestId}가 성공적으로 수정되었습니다.`,
-            data: updatedRequest,
-        });
-
-    } catch (error) {
-        if (error.message.includes('찾을 수 없')) {
-            return res.status(404).json({
-                success: false,
-                message: error.message,
-            });
-        }
-        
-        console.error('대타 요청 수정 중 서버 오류 발생. 상세 메시지:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: '대타 요청 수정 처리 중 서버 오류가 발생했습니다.',
-        });
-    }
-}
 module.exports = {
     createSubstituteRequestController,
     getSubstituteRequestsController,
@@ -315,5 +246,4 @@ module.exports = {
     acceptSubstituteRequestController,
     manageSubstituteRequestController,
     deleteSubstituteRequestController,
-    updateSubstituteRequestController,
 };
