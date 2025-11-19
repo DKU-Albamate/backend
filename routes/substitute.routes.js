@@ -46,6 +46,6 @@ router.delete(
 router.put(
   '/requests/:requestId', // 경로 파라미터 이름: 'requestId'
   // authenticate 미들웨어는 제거됨
-  requestsController.updateSubstituteRequestController 
+  substituteController.updateSubstituteRequestController 
 );
 module.exports = router;
