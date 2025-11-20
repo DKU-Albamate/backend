@@ -134,18 +134,28 @@ async function createSubstituteRequest(requestData) {
     return data;
 }
 /**
- *  특정 그룹의 모든 상태 대타 요청 리스트를 조회합니다.
+ * 특정 그룹의 대타 요청 리스트를 조회합니다.
+ * statusFilter가 있을 경우 해당 상태의 요청만 필터링합니다.
  */
-async function getSubstituteRequests(group_id) { // 💡 statusFilter 매개변수 제거
+// 💡 [수정]: 두 번째 매개변수로 statusFilter를 받습니다.
+async function getSubstituteRequests(group_id, statusFilter) {
     if (!group_id) {
         throw new Error("Group ID는 필수입니다.");
     }
     
-    // group_id만 필터링하여 모든 상태의 요청을 조회합니다.
-    const { data: requests, error } = await supabase
+    // 1. 기본 쿼리 생성: group_id로 필터링
+    let query = supabase
         .from('substitute_requests')
         .select('*') 
-        .eq('group_id', group_id)
+        .eq('group_id', group_id);
+        
+    // 2. [핵심]: statusFilter가 있을 경우 쿼리 조건 추가
+    if (statusFilter) {
+        query = query.eq('status', statusFilter); 
+    }
+
+    // 3. 정렬 및 실행
+    const { data: requests, error } = await query
         .order('shift_date', { ascending: true }); // 날짜 순으로 정렬
 
     if (error) {

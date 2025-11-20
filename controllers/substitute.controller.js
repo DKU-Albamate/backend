@@ -44,8 +44,8 @@ async function createSubstituteRequestController(req, res) {
  *  [수정] group_id에 해당하는 모든 상태의 요청을 조회합니다.
  */
 async function getSubstituteRequestsController(req, res) {
-    // 쿼리 파라미터에서 group_id만 추출
-    const { group_id } = req.query; 
+    // 쿼리 파라미터에서 group_id와 status를 모두 추출합니다.
+    const { group_id, status } = req.query;
 
     if (!group_id) {
         return res.status(400).json({
@@ -55,12 +55,15 @@ async function getSubstituteRequestsController(req, res) {
     }
 
     try {
-        //  [수정] 서비스 함수에 group_id만 전달합니다.
-        const requests = await substituteService.getSubstituteRequests(group_id);
+        // 💡 [수정] 서비스 함수에 group_id와 status를 모두 전달합니다.
+        // status가 쿼리에 없으면 (사장님 요청), undefined가 전달됩니다.
+        const requests = await substituteService.getSubstituteRequests(group_id, status);
+
+        const filterMessage = status ? `${status} 상태의 요청` : '모든 상태의 요청';
 
         return res.status(200).json({
             success: true,
-            message: `Group ID ${group_id}의 모든 대타 요청 ${requests.length}건을 조회했습니다.`,
+            message: `Group ID ${group_id}의 ${filterMessage} ${requests.length}건을 조회했습니다.`,
             data: requests,
         });
 
